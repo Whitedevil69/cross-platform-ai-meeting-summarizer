@@ -5286,6 +5286,7 @@ Evidence verification links and audio citations are archived in Syncra Workplace
 
       // ── Helpers ──
       function showToast(msg, type = 'info') {
+        window.showToast = showToast;
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         toast.innerHTML = `<span>${type === 'success' ? '✅' : (type === 'error' ? '⚠️' : 'ℹ️')}</span><span>${escapeHtml(msg)}</span>`;
@@ -7081,6 +7082,7 @@ ${escapeHtml(data.answer)}`;
       const rmRefreshBtn = document.getElementById('rmRefreshBtn');
 
       async function loadRecentMeetings(q = '') {
+        window.loadRecentMeetings = loadRecentMeetings;
         if (rmLoading) rmLoading.style.display = 'flex';
         if (rmTable) rmTable.style.display = 'none';
         if (rmEmpty) rmEmpty.style.display = 'none';
@@ -7525,6 +7527,32 @@ ${escapeHtml(data.answer)}`;
     // ══════════════════════════════════════════════════════════════════════
     // REAL MULTI-TENANT WORKSPACE ENGINE (SQLite Backed)
     // ══════════════════════════════════════════════════════════════════════
+    const API_BASE = (window.location.protocol.startsWith('http') && window.location.port === '8000') 
+      ? '' 
+      : 'http://localhost:8000';
+    window.API_BASE = API_BASE;
+
+    function escHtml(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    window.escHtml = escHtml;
+
+    function localShowToast(msg, type = 'info') {
+      if (typeof window.showToast === 'function' && window.showToast !== localShowToast) {
+        window.showToast(msg, type);
+        return;
+      }
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `<span>${type === 'success' ? '✅' : (type === 'error' ? '⚠️' : 'ℹ️')}</span><span>${msg}</span>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
     window.currentWorkspaceId = localStorage.getItem('active_workspace_id') || 'ws-engineering';
     window.workspacesData = [];
 
@@ -7587,7 +7615,7 @@ ${escapeHtml(data.answer)}`;
                   </div>
                   ${isActive 
                     ? '<button type="button" class="app-btn-primary" style="padding:5px 14px;font-size:0.75rem;cursor:default;">Current</button>' 
-                    : `<button type="button" class="app-btn-secondary" onclick="switchActiveWorkspace('${ws.workspace_id}')" style="padding:5px 14px;font-size:0.75rem;">Switch Workspace</button>`}
+                    : `<button type="button" class="app-btn-secondary" onclick="switchActiveWorkspace('${ws.workspace_id}')" style="padding:5px 14px;font-size:0.75rem;cursor:pointer;">Switch Workspace</button>`}
                 </div>
               </div>
             `;
@@ -7603,10 +7631,10 @@ ${escapeHtml(data.answer)}`;
       localStorage.setItem('active_workspace_id', wsId);
       const target = window.workspacesData.find(w => w.workspace_id === wsId);
       const name = target ? target.name : wsId;
-      showToast(`Switched to ${name}!`, 'success');
+      localShowToast(`Switched to ${name}!`, 'success');
       window.loadWorkspacesView();
-      if (typeof loadRecentMeetings === 'function') {
-        loadRecentMeetings();
+      if (typeof window.loadRecentMeetings === 'function') {
+        window.loadRecentMeetings();
       }
     };
 
@@ -7614,7 +7642,7 @@ ${escapeHtml(data.answer)}`;
       const m = document.getElementById('modalCreateWorkspaceOverlay');
       if (m) {
         m.style.display = 'flex';
-        document.getElementById('newWsName')?.focus();
+        setTimeout(() => document.getElementById('newWsName')?.focus(), 50);
       }
     };
 
@@ -7624,13 +7652,27 @@ ${escapeHtml(data.answer)}`;
     };
 
     window.handleCreateWorkspaceSubmit = async function(e) {
-      e.preventDefault();
-      const name = document.getElementById('newWsName').value.trim();
-      const department = document.getElementById('newWsDepartment').value;
-      const icon = document.getElementById('newWsIcon').value.trim() || '💼';
-      const description = document.getElementById('newWsDescription').value.trim();
+      if (e && e.preventDefault) e.preventDefault();
+      const nameEl = document.getElementById('newWsName');
+      const deptEl = document.getElementById('newWsDepartment');
+      const iconEl = document.getElementById('newWsIcon');
+      const descEl = document.getElementById('newWsDescription');
 
-      if (!name) return;
+      const name = nameEl ? nameEl.value.trim() : '';
+      const department = deptEl ? deptEl.value : 'General';
+      const icon = (iconEl && iconEl.value.trim()) ? iconEl.value.trim() : '💼';
+      const description = descEl ? descEl.value.trim() : '';
+
+      if (!name) {
+        localShowToast('Please enter a workspace name', 'error');
+        return false;
+      }
+
+      const submitBtn = document.getElementById('btnSubmitCreateWs');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating…';
+      }
 
       try {
         const res = await fetch(`${API_BASE}/api/workspaces`, {
@@ -7638,26 +7680,45 @@ ${escapeHtml(data.answer)}`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, department, icon, description })
         });
-        if (!res.ok) throw new Error("Could not create workspace");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || "Could not create workspace");
+        }
         const result = await res.json();
-        closeCreateWorkspaceModal();
-        showToast(`Workspace "${name}" provisioned in SQLite!`, 'success');
+        window.closeCreateWorkspaceModal();
+        localShowToast(`Workspace "${name}" provisioned in SQLite!`, 'success');
+        
+        // Reset form inputs
+        if (nameEl) nameEl.value = '';
+        if (descEl) descEl.value = '';
+        
+        // Switch to the newly created workspace
         window.currentWorkspaceId = result.workspace.workspace_id;
         localStorage.setItem('active_workspace_id', window.currentWorkspaceId);
+        
         await window.loadWorkspacesView();
-        if (typeof loadRecentMeetings === 'function') loadRecentMeetings();
+        if (typeof window.loadRecentMeetings === 'function') {
+          window.loadRecentMeetings();
+        }
       } catch(err) {
-        showToast(err.message, 'error');
+        console.error("Workspace creation failed:", err);
+        localShowToast(err.message || 'Failed to create workspace', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Create Workspace';
+        }
       }
+      return false;
     };
 
-    // Auto-load workspaces on initial page load
+    // Auto-load on page ready
     setTimeout(() => {
       if (typeof window.loadWorkspacesView === 'function') {
         window.loadWorkspacesView();
       }
-    }, 150);
-
+    }, 100);
+    
   </script>
 
 <!-- Modal: Create New Workspace -->
@@ -7700,7 +7761,7 @@ ${escapeHtml(data.answer)}`;
       </div>
       <div style="display:flex;justify-content:flex-end;gap:10px;">
         <button type="button" onclick="closeCreateWorkspaceModal()" class="app-btn-secondary" style="padding:8px 18px;font-size:0.85rem;">Cancel</button>
-        <button type="submit" class="app-btn-primary" style="padding:8px 20px;font-size:0.85rem;">Create Workspace</button>
+        <button type="button" id="btnSubmitCreateWs" onclick="handleCreateWorkspaceSubmit(event)" class="app-btn-primary" style="padding:8px 20px;font-size:0.85rem;cursor:pointer;">Create Workspace</button>
       </div>
     </form>
   </div>
