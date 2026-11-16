@@ -1,0 +1,3233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Meeting Room — AI Meeting Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- LiveKit JS SDK from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+  
+  <style>
+
+    /* ── Reset & Global Variables ─────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --canvas-sage: #a9b8aa;
+      --shell-white: #ffffff;
+      --dock-dark: #18191b;
+      --highlight-lime: #e5f97e;
+      --card-bg: #fbfcfb;
+      --card-border: #edf0ed;
+      --card-border-hover: #dbe2db;
+      
+      --text-dark: #18191b;
+      --text-primary: #18191b;
+      --text-secondary: #475569;
+      --text-muted: #8b95a5;
+      --text-heading: #18191b;
+      
+      --success: #10b981;
+      --success-bg: #eafaf1;
+      --success-border: #c2eed5;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --danger-bg: #fef2f2;
+      --danger-border: #fee2e2;
+      --warning: #f59e0b;
+      --secondary: #18191b;
+      
+      --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --topbar-height: 72px;
+      --bottombar-height: 78px;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: var(--font-family);
+      background-color: var(--canvas-sage);
+      color: var(--text-dark);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Ambient radial orbs hidden for clean Dribbble light aesthetic */
+    body::before, body::after, .ambient-orb-center {
+      display: none !important;
+    }
+
+    /* ── Application Layout ───────────────────────────────────────────── */
+    #app-container {
+      position: relative;
+      width: calc(100vw - 32px);
+      max-width: 1720px;
+      height: calc(100vh - 32px);
+      margin: 16px auto;
+      background: var(--shell-white);
+      border-radius: 28px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.12);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    /* ── Top Bar ──────────────────────────────────────────────────────── */
+    header.top-bar {
+      height: var(--topbar-height);
+      padding: 0 28px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-logo {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: var(--dock-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--highlight-lime);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    }
+
+    .brand-icon:hover {
+      transform: scale(1.04);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    }
+
+    .brand-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: var(--highlight-lime);
+    }
+
+    .meeting-info-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .meeting-title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .meeting-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-dark);
+      letter-spacing: -0.02em;
+    }
+
+    .meeting-id-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f4f7f4;
+      border: 1px solid #e2e8e2;
+      border-radius: 9999px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: var(--text-dark);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .meeting-id-pill:hover {
+      background: #e7ede7;
+      border-color: #cbd5e1;
+    }
+
+    .meeting-id-pill svg {
+      width: 13px;
+      height: 13px;
+      stroke: var(--text-muted);
+      transition: stroke 0.2s ease;
+    }
+
+    .meeting-id-pill:hover svg {
+      stroke: var(--text-dark);
+    }
+
+    .meeting-id-pill.copied {
+      background: var(--highlight-lime);
+      border-color: #d1ea64;
+      color: var(--dock-dark);
+    }
+
+    /* Top Center: Recording Indicator & Timer */
+    .top-center {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .recording-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      border-radius: 9999px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #dc2626;
+      letter-spacing: -0.01em;
+    }
+
+    .pulsing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      animation: pulseRecord 1.8s infinite;
+    }
+
+    @keyframes pulseRecord {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
+    }
+
+    .timer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--dock-dark);
+      color: #ffffff;
+      border-radius: 9999px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .timer-badge svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--highlight-lime);
+    }
+
+    /* Top Right: Stats & Navigation */
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .participants-counter {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f4f7f4;
+      border: 1px solid #e2e8e2;
+      border-radius: 9999px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .participants-counter svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--text-dark);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f4f7f4;
+      border: 1px solid #e2e8e2;
+      border-radius: 9999px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .status-pill.connected {
+      background: var(--success-bg);
+      border-color: var(--success-border);
+      color: #107e4a;
+    }
+
+    .status-pill .indicator-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .status-pill.connected .indicator-dot {
+      background: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+    }
+
+    .top-nav-link {
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: #f4f7f4;
+      color: var(--text-dark);
+      border: 1px solid #e2e8e2;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+    }
+
+    .top-nav-link:hover {
+      background: var(--dock-dark);
+      border-color: var(--dock-dark);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .top-nav-link svg {
+      stroke: currentColor;
+    }
+
+    /* ── Main Workspace: Two-Column Layout ────────────────────────────── */
+    .main-workspace {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
+      padding: 20px 28px;
+      flex: 1;
+      overflow: hidden;
+      background: #f8faf8;
+    }
+
+    /* ── Left Column: Participant Tiles ───────────────────────────────── */
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 22px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--card-border);
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-dark);
+      letter-spacing: -0.01em;
+    }
+
+    .panel-title svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--text-dark);
+    }
+
+    #tiles-count-hint {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: #f4f7f4;
+      padding: 4px 12px;
+      border-radius: 9999px;
+    }
+
+    .tiles-grid-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      align-content: start;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    /* Participant Tile Card */
+    .participant-tile {
+      position: relative;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 22px;
+      min-height: 250px;
+      padding: 24px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+      overflow: hidden;
+    }
+
+    .participant-tile:hover {
+      transform: translateY(-2px);
+      border-color: var(--card-border-hover);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+    }
+
+    .participant-tile.speaking {
+      border: 2px solid var(--dock-dark);
+      box-shadow: 0 0 0 3px rgba(229, 249, 126, 0.65), 0 8px 25px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Video inside tile */
+    .tile-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+      z-index: 1;
+      background: #000000;
+      border-radius: 22px;
+    }
+
+    .tile-video.active {
+      display: block;
+    }
+
+    .participant-tile.has-video {
+      padding: 0;
+      min-height: 260px;
+      background: #000000;
+    }
+
+    .participant-tile.has-video .avatar-wrapper {
+      display: none !important;
+    }
+
+    .participant-tile.has-video .participant-name-row {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      z-index: 3;
+      background: rgba(24, 25, 27, 0.75);
+      backdrop-filter: blur(8px);
+      padding: 5px 12px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      flex-direction: row;
+      gap: 6px;
+    }
+
+    .participant-tile.has-video .participant-name {
+      color: #ffffff;
+      font-size: 13px;
+    }
+
+    .participant-tile.has-video .tile-status-row {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 3;
+    }
+
+    .participant-tile.has-video .speaking-badge {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 3;
+    }
+
+    /* Avatar styling */
+    .avatar-wrapper {
+      position: relative;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .participant-avatar {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+      border: 4px solid #ffffff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      z-index: 2;
+      position: relative;
+    }
+
+    .speaking-rings {
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      right: -8px;
+      bottom: -8px;
+      border-radius: 50%;
+      border: 2.5px solid var(--highlight-lime);
+      opacity: 0;
+      transform: scale(0.9);
+      transition: all 0.3s ease;
+      z-index: 1;
+    }
+
+    .participant-tile.speaking .speaking-rings {
+      opacity: 1;
+      animation: pulseAvatarRing 1.5s infinite;
+    }
+
+    @keyframes pulseAvatarRing {
+      0% { transform: scale(0.95); opacity: 0.9; }
+      50% { transform: scale(1.18); opacity: 0.4; }
+      100% { transform: scale(1.35); opacity: 0; }
+    }
+
+    /* Speaking badge pill */
+    .speaking-badge {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: var(--dock-dark);
+      color: var(--highlight-lime);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      z-index: 3;
+    }
+
+    .participant-tile.speaking .speaking-badge {
+      display: inline-flex;
+    }
+
+    .sound-bars {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 12px;
+    }
+
+    .sound-bar {
+      width: 2.5px;
+      height: 4px;
+      background: var(--highlight-lime);
+      border-radius: 2px;
+      animation: soundBarBounce 0.8s ease-in-out infinite alternate;
+    }
+
+    .sound-bar:nth-child(1) { animation-delay: 0.1s; height: 10px; }
+    .sound-bar:nth-child(2) { animation-delay: 0.3s; height: 6px; }
+    .sound-bar:nth-child(3) { animation-delay: 0.2s; height: 12px; }
+    .sound-bar:nth-child(4) { animation-delay: 0.4s; height: 8px; }
+
+    @keyframes soundBarBounce {
+      0% { height: 3px; }
+      100% { height: 12px; }
+    }
+
+    .participant-name-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 2;
+      margin-bottom: 10px;
+    }
+
+    .participant-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .you-pill {
+      background: var(--highlight-lime);
+      color: var(--dock-dark);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      letter-spacing: 0.02em;
+    }
+
+    .tile-status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .mic-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: #107e4a;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .mic-status-pill.muted {
+      background: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: #dc2626;
+    }
+
+    .mic-status-pill svg {
+      width: 12px;
+      height: 12px;
+      stroke: currentColor;
+    }
+
+    /* Waiting for colleagues card */
+    .waiting-card {
+      border: 1.5px dashed #cbd5e1;
+      background: var(--card-bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 30px 24px;
+      border-radius: 22px;
+      min-height: 250px;
+      transition: all 0.2s ease;
+    }
+
+    .waiting-card:hover {
+      border-color: #94a3b8;
+      background: #ffffff;
+    }
+
+    .waiting-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: #f4f7f4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dark);
+      margin-bottom: 14px;
+    }
+
+    .waiting-icon svg {
+      stroke: var(--text-dark);
+    }
+
+    .waiting-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+
+    .waiting-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      max-width: 260px;
+      margin-bottom: 18px;
+    }
+
+    .waiting-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--dock-dark);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 9px 18px;
+      border-radius: 9999px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+      transition: all 0.18s ease;
+    }
+
+    .waiting-btn:hover {
+      background: #000000;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    }
+
+    .waiting-btn svg {
+      stroke: var(--highlight-lime);
+    }
+
+    /* ── Right Column: Live Transcript Panel ──────────────────────────── */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 22px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.02);
+    }
+
+    .transcript-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--card-border);
+      flex-shrink: 0;
+    }
+
+    .transcript-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .transcript-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-dark);
+      letter-spacing: -0.02em;
+    }
+
+    .transcript-title svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--text-dark);
+    }
+
+    .live-stream-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--highlight-lime);
+      color: var(--dock-dark);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    .green-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--dock-dark);
+      animation: pulseDot 1.5s infinite;
+    }
+
+    @keyframes pulseDot {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+
+    .transcript-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .transcript-action-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: #f4f7f4;
+      border: 1px solid #e2e8e2;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .transcript-action-btn:hover {
+      background: var(--dock-dark);
+      border-color: var(--dock-dark);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .transcript-action-btn svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+    }
+
+    /* Transcript Subbar: Language filter & Auto-scroll */
+    .transcript-subbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .lang-pills-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .lang-filter-pill {
+      padding: 5px 14px;
+      border-radius: 9999px;
+      background: #f4f7f4;
+      border: 1px solid #e2e8e2;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      user-select: none;
+    }
+
+    .lang-filter-pill:hover {
+      background: #edf1ed;
+      color: var(--text-dark);
+    }
+
+    .lang-filter-pill.active {
+      background: var(--dock-dark);
+      border-color: var(--dock-dark);
+      color: #ffffff;
+    }
+
+    .auto-scroll-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .auto-scroll-toggle input {
+      accent-color: var(--dock-dark);
+      cursor: pointer;
+    }
+
+    /* Scrolling Segment Feed */
+    .transcript-feed {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-right: 4px;
+    }
+
+    /* Empty State */
+    .transcript-empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px;
+      margin: auto 0;
+    }
+
+    .speech-radar {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(229, 249, 126, 0.3);
+      border: 2px solid var(--highlight-lime);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--dock-dark);
+      margin-bottom: 18px;
+    }
+
+    .speech-radar svg {
+      width: 26px;
+      height: 26px;
+      stroke: var(--dock-dark);
+    }
+
+    .radar-pulse {
+      position: absolute;
+      top: -12px;
+      left: -12px;
+      right: -12px;
+      bottom: -12px;
+      border-radius: 50%;
+      border: 2px solid rgba(229, 249, 126, 0.7);
+      animation: radarWave 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+    }
+
+    @keyframes radarWave {
+      0% { transform: scale(0.85); opacity: 0.9; }
+      100% { transform: scale(1.45); opacity: 0; }
+    }
+
+    .empty-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+
+    .empty-desc {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      max-width: 320px;
+    }
+
+    /* Segment Cards */
+    .segment-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 14px 16px;
+      transition: all 0.18s ease;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .segment-card:hover {
+      background: #ffffff;
+      border-color: var(--card-border-hover);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    }
+
+    .segment-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .segment-speaker-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .segment-speaker-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--dock-dark);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .segment-speaker-name {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-dark);
+    }
+
+    .segment-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .timestamp-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .lang-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: #f4f7f4;
+      border: 1px solid #e2e8e2;
+      color: var(--text-dark);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .segment-body {
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #1e293b;
+      word-break: break-word;
+    }
+
+    .segment-translation {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #f4fdf7;
+      border-left: 3px solid #10b981;
+      border-radius: 8px;
+      font-size: 12.5px;
+      color: #065f46;
+      line-height: 1.45;
+    }
+
+    .segment-translation-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #047857;
+      margin-bottom: 3px;
+    }
+
+    /* ── Bottom Bar ───────────────────────────────────────────────────── */
+    footer.bottom-bar {
+      height: var(--bottombar-height);
+      padding: 0 28px;
+      background: #ffffff;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    .bottom-left, .bottom-center, .bottom-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .control-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #f4f7f4;
+      border: 1px solid #e2e8e2;
+      color: var(--text-dark);
+      cursor: pointer;
+      transition: all 0.18s ease;
+      font-family: inherit;
+    }
+
+    .control-btn:hover {
+      background: #e7ede7;
+      transform: translateY(-1px);
+    }
+
+    .control-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+    }
+
+    .control-btn.active-control {
+      background: var(--dock-dark);
+      border-color: var(--dock-dark);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .control-btn.active-control svg {
+      stroke: var(--highlight-lime);
+    }
+
+    .control-btn.muted-control {
+      background: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: #dc2626;
+    }
+
+    .control-btn.muted-control svg {
+      stroke: #dc2626;
+    }
+
+    .mini-meter-wrap {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 22px;
+      padding: 0 8px;
+      background: #f4f7f4;
+      border: 1px solid #e2e8e2;
+      border-radius: 9999px;
+    }
+
+    .mini-meter-bar {
+      width: 3px;
+      height: 6px;
+      background: #cbd5e1;
+      border-radius: 2px;
+      transition: height 0.1s ease, background-color 0.1s ease;
+    }
+
+    .mini-meter-bar.active {
+      background: var(--dock-dark);
+    }
+
+    .end-meeting-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 800;
+      background: var(--danger);
+      border: none;
+      color: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+      transition: all 0.18s ease;
+      font-family: inherit;
+    }
+
+    .end-meeting-btn:hover {
+      background: var(--danger-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.45);
+    }
+
+    .end-meeting-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: #ffffff;
+    }
+
+    /* ── Modals & Dialogs ─────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(24, 25, 27, 0.45);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.open,
+    .modal-overlay.active {
+      display: flex !important;
+    }
+
+    .modal-box {
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: 26px;
+      padding: 32px;
+      width: 90%;
+      max-width: 480px;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.18);
+      position: relative;
+      animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalPop {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: #f4f7f4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dark);
+      margin-bottom: 18px;
+    }
+
+    .modal-header-icon svg {
+      width: 24px;
+      height: 24px;
+      stroke: currentColor;
+    }
+
+    .modal-header-icon.red {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .modal-header-icon.cyan, .modal-header-icon.purple {
+      background: #f4f7f4;
+      color: var(--text-dark);
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .modal-desc {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-bottom: 22px;
+    }
+
+    .modal-input-group {
+      margin-bottom: 22px;
+    }
+
+    .modal-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: var(--card-bg);
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text-dark);
+      outline: none;
+      transition: all 0.18s ease;
+    }
+
+    .modal-input:focus {
+      border-color: var(--dock-dark);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(24, 25, 27, 0.08);
+    }
+
+    .consent-bullet-box {
+      background: #f8faf8;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .consent-bullet {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12.5px;
+      color: #334155;
+      line-height: 1.45;
+    }
+
+    .consent-bullet svg {
+      width: 16px;
+      height: 16px;
+      stroke: #10b981;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .modal-btn-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .modal-btn {
+      padding: 11px 22px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+      font-family: inherit;
+    }
+
+    .modal-btn svg {
+      stroke: currentColor;
+    }
+
+    .modal-btn-secondary {
+      background: #f4f7f4;
+      border: 1px solid #e2e8e2;
+      color: var(--text-dark);
+    }
+
+    .modal-btn-secondary:hover {
+      background: #e7ede7;
+    }
+
+    .modal-btn-primary {
+      background: var(--dock-dark);
+      border: 1px solid var(--dock-dark);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .modal-btn-primary:hover {
+      background: #000000;
+      border-color: #000000;
+    }
+
+    .modal-btn-danger {
+      background: var(--danger);
+      border: 1px solid var(--danger);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+    }
+
+    .modal-btn-danger:hover {
+      background: var(--danger-hover);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #f4f7f4;
+      border: none;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .modal-close-btn:hover {
+      background: var(--dock-dark);
+      color: #ffffff;
+    }
+
+    .modal-close-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+    }
+
+    .copy-url-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .copy-url-input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: #f8faf8;
+      border: 1px solid #cbd5e1;
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: var(--text-dark);
+      outline: none;
+    }
+
+    .copy-action-btn {
+      padding: 10px 18px;
+      border-radius: 12px;
+      background: var(--dock-dark);
+      color: #ffffff;
+      border: none;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+      font-family: inherit;
+    }
+
+    .copy-action-btn:hover {
+      background: #000000;
+    }
+
+    .copy-action-btn svg {
+      stroke: var(--highlight-lime);
+    }
+
+    /* ── Ending Processing Overlay ────────────────────────────────────── */
+    .ending-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 2000;
+      padding: 24px;
+    }
+
+    .ending-overlay.active {
+      display: flex;
+    }
+
+    .spinner-disc {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 4px solid var(--card-border);
+      border-top-color: var(--dock-dark);
+      border-right-color: var(--highlight-lime);
+      animation: spinRing 0.9s linear infinite;
+      margin-bottom: 22px;
+    }
+
+    @keyframes spinRing {
+      to { transform: rotate(360deg); }
+    }
+
+    .ending-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .ending-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      max-width: 440px;
+      line-height: 1.55;
+    }
+
+    /* ── Toast Notifications ─────────────────────────────────────────── */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 3000;
+      pointer-events: none;
+    }
+
+    .toast {
+      pointer-events: auto;
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dark);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes toastSlideIn {
+      0% { transform: translateY(16px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    .toast.success {
+      border-left: 4px solid #10b981;
+    }
+
+    .toast.success svg {
+      stroke: #10b981;
+    }
+
+    .toast.danger {
+      border-left: 4px solid var(--danger);
+    }
+
+    .toast.danger svg {
+      stroke: var(--danger);
+    }
+
+    .toast.info {
+      border-left: 4px solid var(--dock-dark);
+    }
+
+    .toast.info svg {
+      stroke: var(--dock-dark);
+    }
+
+    /* ── Custom Scrollbar ─────────────────────────────────────────────── */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* ── Responsive adjustments ───────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .main-workspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr;
+      }
+      header.top-bar {
+        padding: 0 16px;
+      }
+      footer.bottom-bar {
+        padding: 0 16px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Background Orbs -->
+  <div class="ambient-orb-center"></div>
+
+  <!-- Application Shell -->
+  <div id="app-container">
+
+    <!-- ── Header Top Bar ── -->
+    <header class="top-bar">
+      <div class="top-left">
+        <a href="/app/index.html" class="brand-logo" title="Back to Dashboard">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" x2="12" y1="19" y2="22"></line>
+            </svg>
+          </div>
+        </a>
+
+        <div class="meeting-info-group">
+          <div class="meeting-title-row">
+            <span class="meeting-title" id="room-title">Meeting Intelligence Session</span>
+            <div class="meeting-id-pill" id="meeting-id-badge" title="Click to copy meeting ID">
+              <span id="meeting-id-display">--------</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Recording & Timer -->
+      <div class="top-center">
+        <div class="recording-badge">
+          <div class="pulsing-dot"></div>
+          <span>Recording & Transcribing</span>
+        </div>
+
+        <div class="timer-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span id="meeting-timer">00:00</span>
+        </div>
+      </div>
+
+      <!-- Right: Participants & Status Pill & Page Links -->
+      <div class="top-right" style="display:flex;align-items:center;gap:10px;">
+        <div class="participants-counter" id="participants-counter-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span id="participants-count-text">Participants: 1</span>
+        </div>
+
+        <div class="status-pill connected" id="connection-status-pill">
+          <div class="indicator-dot"></div>
+          <span id="connection-status-text">Connected</span>
+        </div>
+
+        <a href="/app/index.html" class="top-nav-link" title="Dashboard">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="/app/report.html" class="top-nav-link" title="Reports" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>Reports</span>
+        </a>
+        <a href="/app/login.html" class="top-nav-link" title="Account">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span>Account</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- ── Main Workspace ── -->
+    <main class="main-workspace">
+
+      <!-- Left Panel: Participant Tiles -->
+      <section class="left-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+              <path d="M3 9h18"></path>
+              <path d="M9 21V9"></path>
+            </svg>
+            <span>Meeting Participants</span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted);" id="tiles-count-hint">
+            Active audio room
+          </div>
+        </div>
+
+        <div class="tiles-grid-container" id="tiles-grid">
+          <!-- Local participant tile will be injected here -->
+          <!-- Remote tiles and waiting card -->
+        </div>
+      </section>
+
+      <!-- Right Panel: Live Transcript -->
+      <section class="right-panel">
+        <div class="transcript-header">
+          <div class="transcript-title-wrap">
+            <div class="transcript-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span>Live Transcript</span>
+            </div>
+            <div class="live-stream-badge">
+              <div class="green-dot"></div>
+              <span>STREAMING</span>
+            </div>
+          </div>
+
+          <div class="transcript-actions">
+            <button class="transcript-action-btn" id="btn-copy-transcript" title="Copy full transcript">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Subbar: Language filter & Auto-scroll -->
+        <div class="transcript-subbar">
+          <div class="lang-pills-group">
+            <span class="lang-filter-pill active" data-lang="all">All</span>
+            <span class="lang-filter-pill" data-lang="hi">🇮🇳 Hindi</span>
+            <span class="lang-filter-pill" data-lang="en">🇬🇧 English</span>
+          </div>
+
+          <label class="auto-scroll-toggle">
+            <input type="checkbox" id="auto-scroll-checkbox" checked>
+            <span>Auto-scroll</span>
+          </label>
+        </div>
+
+        <!-- Scrolling Segment Feed -->
+        <div class="transcript-feed" id="transcript-feed">
+          <!-- Empty State (removed upon first segment) -->
+          <div class="transcript-empty-state" id="transcript-empty">
+            <div class="speech-radar">
+              <div class="radar-pulse"></div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" x2="12" y1="19" y2="22"></line>
+              </svg>
+            </div>
+            <div class="empty-title">Listening for speech…</div>
+            <div class="empty-desc">
+              Speak into your microphone. Real-time Hindi and English transcript segments will appear here automatically.
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ── Bottom Bar ── -->
+    <footer class="bottom-bar">
+      <!-- Left Controls: Mic Toggle, Camera Toggle & Level Meter -->
+      <div class="bottom-left" style="display:flex;align-items:center;gap:12px;">
+        <button class="control-btn active-control" id="btn-toggle-mic" title="Toggle Microphone (M)">
+          <svg id="mic-icon-active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" x2="12" y1="19" y2="22"></line>
+          </svg>
+          <svg id="mic-icon-muted" style="display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="2" x2="22" y1="2" y2="22"></line>
+            <path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"></path>
+            <path d="M5 10v2a7 7 0 0 0 12 5"></path>
+            <path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"></path>
+            <path d="M9 9v3a3 3 0 0 0 5.12 2.12"></path>
+            <line x1="12" x2="12" y1="19" y2="22"></line>
+          </svg>
+          <span id="mic-label">Mute</span>
+        </button>
+
+        <!-- Camera Video Toggle -->
+        <button class="control-btn" id="btn-toggle-cam" title="Toggle Camera Video (V)">
+          <svg id="cam-icon-active" style="display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m22 8-6 4 6 4V8Z"></path>
+            <rect width="14" height="12" x="2" y="6" rx="2" ry="2"></rect>
+          </svg>
+          <svg id="cam-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="2" x2="22" y1="2" y2="22"></line>
+            <path d="M10.66 6H14a2 2 0 0 1 2 2v2.34l1 1L22 8v8"></path>
+            <path d="M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"></path>
+          </svg>
+          <span id="cam-label">Start Video</span>
+        </button>
+
+        <div class="mini-meter-wrap" title="Input audio activity">
+          <div class="mini-meter-bar" id="meter-bar-1"></div>
+          <div class="mini-meter-bar" id="meter-bar-2"></div>
+          <div class="mini-meter-bar" id="meter-bar-3"></div>
+          <div class="mini-meter-bar" id="meter-bar-4"></div>
+        </div>
+      </div>
+
+      <!-- Center Controls: Screen Share, Share Link & Room ID -->
+      <div class="bottom-center" style="display:flex;align-items:center;gap:12px;">
+        <button class="control-btn" id="btn-toggle-screen" title="Share Screen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="14" x="2" y="3" rx="2"></rect>
+            <line x1="8" x2="16" y1="21" y2="21"></line>
+            <line x1="12" x2="12" y1="17" y2="21"></line>
+          </svg>
+          <span id="screen-label">Share Screen</span>
+        </button>
+
+        <button class="control-btn" id="btn-open-share" title="Share invite link with colleagues">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+            <polyline points="16 6 12 2 8 6"></polyline>
+            <line x1="12" x2="12" y1="2" y2="15"></line>
+          </svg>
+          <span>Share Link</span>
+        </button>
+      </div>
+
+      <!-- Right Controls: Big End Meeting & Review Button -->
+      <div class="bottom-right">
+        <button class="end-meeting-btn" id="btn-end-meeting" title="End meeting and proceed to AI review">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
+            <line x1="2" x2="22" y1="2" y2="22"></line>
+          </svg>
+          <span>End Meeting & Review</span>
+        </button>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ── Modal 1: Name Entry Modal (if name missing) ── -->
+  <div class="modal-overlay" id="modal-name-entry">
+    <div class="modal-box">
+      <div class="modal-header-icon purple">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </div>
+      <div class="modal-title">Join Live Meeting</div>
+      <div class="modal-desc">
+        Please enter your full name so meeting participants and AI transcript attribution recognize your voice.
+      </div>
+
+      <div class="modal-input-group">
+        <label class="modal-label" for="input-user-name">Your Full Name</label>
+        <input type="text" id="input-user-name" class="modal-input" placeholder="e.g. Gaurav Sharma" autofocus autocomplete="name">
+      </div>
+
+      <div class="modal-btn-row">
+        <a href="/app/login.html" id="link-name-login" class="modal-btn modal-btn-secondary" style="text-decoration:none;">
+          <span>Sign In / Register</span>
+        </a>
+        <button class="modal-btn modal-btn-primary" id="btn-name-continue">
+          <span>Continue to Room</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal 2: Consent Banner Modal (Mandatory on Join) ── -->
+  <div class="modal-overlay" id="modal-consent">
+    <div class="modal-box">
+      <div class="modal-header-icon cyan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <polyline points="9 12 11 14 15 10"></polyline>
+        </svg>
+      </div>
+      <div class="modal-title">Audio Recording & AI Consent</div>
+      <div class="modal-desc">
+        This meeting room will be recorded and transcribed in real-time. Do you consent to participate?
+      </div>
+
+      <div class="consent-bullet-box">
+        <div class="consent-bullet">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Real-time Hindi & English speech recognition via Whisper.</span>
+        </div>
+        <div class="consent-bullet">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>AI-assisted decision, action item, and evidence extraction.</span>
+        </div>
+        <div class="consent-bullet">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Evidence-linked audio clip verification during read-back review.</span>
+        </div>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="modal-btn modal-btn-secondary" id="btn-consent-leave">
+          Leave Meeting
+        </button>
+        <button class="modal-btn modal-btn-primary" id="btn-consent-agree">
+          <span>Agree & Join</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal 3: Share Link Modal ── -->
+  <div class="modal-overlay" id="modal-share-link">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="btn-close-share" title="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <div class="modal-header-icon purple">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+      </div>
+      <div class="modal-title">Share Meeting Link</div>
+      <div class="modal-desc">
+        Send this link to team members. Anyone with the link can join the meeting and view live transcripts.
+      </div>
+
+      <div class="modal-label">Join URL</div>
+      <div class="copy-url-container">
+        <input type="text" id="share-url-input" class="copy-url-input" readonly>
+        <button class="copy-action-btn" id="btn-copy-url">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+          <span id="copy-btn-text">Copy</span>
+        </button>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="modal-btn modal-btn-secondary" id="btn-done-share" style="width: 100%;">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal 4: End Meeting Confirmation Modal ── -->
+  <div class="modal-overlay" id="modal-end-confirm">
+    <div class="modal-box">
+      <div class="modal-header-icon red">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div class="modal-title">End Meeting & Start Review?</div>
+      <div class="modal-desc">
+        This will stop recording, finalize transcript segments, and invoke the AI extraction pipeline to identify decisions, action items, and evidence citations.
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="modal-btn modal-btn-secondary" id="btn-cancel-end">
+          Continue Meeting
+        </button>
+        <button class="modal-btn modal-btn-danger" id="btn-confirm-end">
+          <span>End & Review</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Ending Processing Overlay ── -->
+  <div class="ending-overlay" id="ending-overlay">
+    <div class="spinner-disc"></div>
+    <div class="ending-title">Synthesizing Meeting Intelligence…</div>
+    <div class="ending-subtitle">
+      Processing audio chunks, running multilingual translation, and structuring decisions with evidence citations. Redirecting to Read-back review…
+    </div>
+  </div>
+
+  <!-- ── Toast Container ── -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ── Application Logic ────────────────────────────────────────────── -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ── API Configuration ───────────────────────────────────────────
+      const API_BASE = (window.location.origin.startsWith('http') && !window.location.origin.includes('file://'))
+        ? window.location.origin
+        : 'http://localhost:8000';
+
+      // ── State Variables ─────────────────────────────────────────────
+      let meetingId = null;
+      let participantName = null;
+      let isMuted = false;
+      let meetingSeconds = 0;
+      let timerInterval = null;
+      let activeFilterLang = 'all';
+
+      // Audio & Networking State
+      let audioWs = null;
+      let micStream = null;
+      let mediaRecorder = null;
+      let audioContext = null;
+      let analyser = null;
+      let animationFrameId = null;
+
+      // LiveKit state
+      let livekitRoom = null;
+      let livekitLocalTrack = null;
+      let livekitParticipants = new Map(); // identity -> { name, isSpeaking, isMuted }
+
+      // Video & Camera state
+      let isCameraOn = false;
+      let localVideoStream = null;
+      let livekitVideoTrack = null;
+      let isScreenSharing = false;
+      let screenStream = null;
+
+      // Accumulator for transcripts
+      const transcriptSegments = [];
+
+      // ── DOM Element References ───────────────────────────────────────
+      const roomTitleEl = document.getElementById('room-title');
+      const meetingIdBadge = document.getElementById('meeting-id-badge');
+      const meetingIdDisplay = document.getElementById('meeting-id-display');
+      const meetingTimerEl = document.getElementById('meeting-timer');
+      const participantsCountText = document.getElementById('participants-count-text');
+      const connectionStatusPill = document.getElementById('connection-status-pill');
+      const connectionStatusText = document.getElementById('connection-status-text');
+      const tilesGrid = document.getElementById('tiles-grid');
+      const transcriptFeed = document.getElementById('transcript-feed');
+      const transcriptEmptyState = document.getElementById('transcript-empty');
+      const autoScrollCheckbox = document.getElementById('auto-scroll-checkbox');
+
+      // Bottom Bar Controls
+      const btnToggleMic = document.getElementById('btn-toggle-mic');
+      const micLabel = document.getElementById('mic-label');
+      const micIconActive = document.getElementById('mic-icon-active');
+      const micIconMuted = document.getElementById('mic-icon-muted');
+      const btnToggleCam = document.getElementById('btn-toggle-cam');
+      const camLabel = document.getElementById('cam-label');
+      const camIconActive = document.getElementById('cam-icon-active');
+      const camIconOff = document.getElementById('cam-icon-off');
+      const btnToggleScreen = document.getElementById('btn-toggle-screen');
+      const screenLabel = document.getElementById('screen-label');
+      const btnOpenShare = document.getElementById('btn-open-share');
+      const btnEndMeeting = document.getElementById('btn-end-meeting');
+      const btnCopyTranscript = document.getElementById('btn-copy-transcript');
+
+      // Modals
+      const modalNameEntry = document.getElementById('modal-name-entry');
+      const inputUserName = document.getElementById('input-user-name');
+      const btnNameContinue = document.getElementById('btn-name-continue');
+
+      const modalConsent = document.getElementById('modal-consent');
+      const btnConsentAgree = document.getElementById('btn-consent-agree');
+      const btnConsentLeave = document.getElementById('btn-consent-leave');
+
+      const modalShareLink = document.getElementById('modal-share-link');
+      const shareUrlInput = document.getElementById('share-url-input');
+      const btnCopyUrl = document.getElementById('btn-copy-url');
+      const copyBtnText = document.getElementById('copy-btn-text');
+      const btnCloseShare = document.getElementById('btn-close-share');
+      const btnDoneShare = document.getElementById('btn-done-share');
+
+      const modalEndConfirm = document.getElementById('modal-end-confirm');
+      const btnCancelEnd = document.getElementById('btn-cancel-end');
+      const btnConfirmEnd = document.getElementById('btn-confirm-end');
+
+      const endingOverlay = document.getElementById('ending-overlay');
+      const toastContainer = document.getElementById('toast-container');
+
+      // ── Helpers ──────────────────────────────────────────────────────
+      function getQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+          meeting: params.get('meeting') || params.get('meeting_id') || params.get('room'),
+          name: params.get('name') || params.get('user')
+        };
+      }
+
+      function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+          const r = Math.random() * 16 | 0;
+          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      }
+
+      function showToast(message, type = 'info', duration = 3200) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        let iconSvg = '';
+        if (type === 'success') {
+          iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        } else if (type === 'danger') {
+          iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+        } else {
+          iconSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+        }
+
+        toast.innerHTML = `${iconSvg}<span>${escapeHtml(message)}</span>`;
+        toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(10px)';
+          toast.style.transition = 'all 0.25s ease';
+          setTimeout(() => toast.remove(), 250);
+        }, duration);
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      function formatSeconds(totalSecs) {
+        const mins = Math.floor(totalSecs / 60);
+        const secs = Math.floor(totalSecs % 60);
+        const pad = (n) => String(n).padStart(2, '0');
+        if (mins >= 60) {
+          const hrs = Math.floor(mins / 60);
+          const remMins = mins % 60;
+          return `${pad(hrs)}:${pad(remMins)}:${pad(secs)}`;
+        }
+        return `${pad(mins)}:${pad(secs)}`;
+      }
+
+      function getAvatarColor(str) {
+        const gradients = [
+          'linear-gradient(135deg, #18191b 0%, #2f3336 100%)',
+          'linear-gradient(135deg, #0f766e 0%, #115e59 100%)',
+          'linear-gradient(135deg, #1e3a8a 0%, #172554 100%)',
+          'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
+          'linear-gradient(135deg, #047857 0%, #064e3b 100%)',
+          'linear-gradient(135deg, #312e81 0%, #1e1b4b 100%)'
+        ];
+        let hash = 0;
+        for (let i = 0; i < (str || '').length; i++) {
+          hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const index = Math.abs(hash) % gradients.length;
+        return gradients[index];
+      }
+
+      function getInitials(name) {
+        if (!name) return 'U';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+
+      // ── Step 1: Initialization & URL Checking ────────────────────────
+      async function init() {
+        const params = getQueryParams();
+
+        // 1. Resolve meeting ID
+        if (params.meeting) {
+          meetingId = params.meeting;
+        } else {
+          meetingId = generateUUID();
+          // Update URL without page reload
+          const newUrl = new URL(window.location);
+          newUrl.searchParams.set('meeting', meetingId);
+          window.history.replaceState({}, '', newUrl);
+        }
+
+        meetingIdDisplay.textContent = meetingId.substring(0, 8);
+        shareUrlInput.value = window.location.href;
+
+        // Try fetching meeting record for custom title if available
+        fetchMeetingTitle(meetingId);
+
+        // 2. Resolve Participant Name
+        if (params.name && params.name.trim()) {
+          participantName = params.name.trim();
+          localStorage.setItem('user_name', participantName);
+          showConsentModal();
+        } else {
+          const storedName = localStorage.getItem('user_name');
+          const storedEmail = localStorage.getItem('user_email');
+          if (storedName && storedName.trim()) {
+            participantName = storedName.trim();
+            showConsentModal();
+          } else if (storedEmail && storedEmail.trim()) {
+            participantName = storedEmail.split('@')[0];
+            showConsentModal();
+          } else {
+            showNameModal();
+          }
+        }
+
+        // Setup UI Listeners
+        setupEventListeners();
+      }
+
+      async function fetchMeetingTitle(id) {
+        try {
+          const res = await fetch(`${API_BASE}/api/meetings/${id}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.title) {
+              roomTitleEl.textContent = data.title;
+            }
+          }
+        } catch (e) {
+          // It's normal for newly generated rooms not to have an initial record yet
+        }
+      }
+
+      // ── Step 2: Name & Consent Flow ──────────────────────────────────
+      function showNameModal() {
+        modalNameEntry.classList.add('active');
+        modalNameEntry.classList.add('open');
+        setTimeout(() => inputUserName.focus(), 150);
+      }
+
+      function handleNameSubmitted() {
+        const val = inputUserName.value.trim();
+        if (!val) {
+          inputUserName.style.borderColor = 'var(--danger)';
+          inputUserName.focus();
+          return;
+        }
+
+        participantName = val;
+        localStorage.setItem('user_name', val);
+        modalNameEntry.classList.remove('active');
+        modalNameEntry.classList.remove('open');
+
+        // Update URL param
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('name', participantName);
+        window.history.replaceState({}, '', newUrl);
+
+        shareUrlInput.value = window.location.href;
+
+        showConsentModal();
+      }
+
+      function showConsentModal() {
+        modalConsent.classList.add('active');
+      }
+
+      function handleConsentAgreed() {
+        modalConsent.classList.remove('active');
+        startMeetingSession();
+      }
+
+      function handleConsentDeclined() {
+        modalConsent.classList.remove('active');
+        showToast('You declined consent. Redirecting to home…', 'info');
+        setTimeout(() => {
+          window.location.href = '/app/';
+        }, 1200);
+      }
+
+      // ── Step 3: Start Meeting Session ────────────────────────────────
+      async function startMeetingSession() {
+        // Start Timer
+        startMeetingTimer();
+
+        // Render Local Participant Tile
+        renderParticipantTile({
+          identity: 'local-participant',
+          name: participantName,
+          isLocal: true,
+          isSpeaking: false,
+          isMuted: false
+        });
+        updateParticipantsCount();
+
+        // Connect LiveKit Room & Obtain Token
+        await connectLiveKitRoom();
+
+        // Connect WebSocket Audio Streaming & Audio Input
+        await connectAudioWebSocket();
+
+        showToast(`Joined meeting as ${participantName}`, 'success');
+      }
+
+      function startMeetingTimer() {
+        meetingSeconds = 0;
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          meetingSeconds++;
+          meetingTimerEl.textContent = formatSeconds(meetingSeconds);
+        }, 1000);
+      }
+
+      // ── Step 4: LiveKit JS SDK Connection ────────────────────────────
+      async function connectLiveKitRoom() {
+        connectionStatusPill.className = 'status-pill connecting';
+        connectionStatusText.textContent = 'Connecting LiveKit…';
+
+        try {
+          // Fetch token from backend
+          const tokenUrl = `${API_BASE}/api/rooms/token?meeting_id=${encodeURIComponent(meetingId)}&name=${encodeURIComponent(participantName)}`;
+          const tokenRes = await fetch(tokenUrl);
+          
+          if (!tokenRes.ok) {
+            throw new Error(`Token request failed with status: ${tokenRes.status}`);
+          }
+          
+          const tokenData = await tokenRes.json();
+          const { token, livekit_url } = tokenData;
+
+          if (typeof LivekitClient === 'undefined') {
+            console.warn('LiveKit SDK UMD bundle not found. Running in standalone WebSocket mode.');
+            connectionStatusPill.className = 'status-pill connected';
+            connectionStatusText.textContent = 'Voice Audio Live';
+            return;
+          }
+
+          // Initialize Room
+          livekitRoom = new LivekitClient.Room({
+            adaptiveStream: true,
+            dynacast: true,
+            audioCaptureDefaults: {
+              autoGainControl: true,
+              echoCancellation: true,
+              noiseSuppression: true
+            }
+          });
+
+          // Room Event Listeners
+          livekitRoom.on(LivekitClient.RoomEvent.ParticipantConnected, (p) => {
+            console.log('LiveKit participant connected:', p.identity);
+            livekitParticipants.set(p.identity, {
+              identity: p.identity,
+              name: p.name || p.identity,
+              isSpeaking: false,
+              isMuted: false
+            });
+            renderParticipantTile({
+              identity: p.identity,
+              name: p.name || p.identity,
+              isLocal: false,
+              isSpeaking: false,
+              isMuted: false
+            });
+            updateParticipantsCount();
+            showToast(`${p.name || p.identity} joined the room`, 'info');
+          });
+
+          livekitRoom.on(LivekitClient.RoomEvent.ParticipantDisconnected, (p) => {
+            console.log('LiveKit participant disconnected:', p.identity);
+            livekitParticipants.delete(p.identity);
+            removeParticipantTile(p.identity);
+            updateParticipantsCount();
+            showToast(`${p.name || p.identity} left the room`, 'info');
+          });
+
+          livekitRoom.on(LivekitClient.RoomEvent.ActiveSpeakersChanged, (speakers) => {
+            const speakingIdentities = new Set(speakers.map(s => s.identity));
+            
+            // Check local
+            const isLocalSpeaking = speakingIdentities.has(livekitRoom.localParticipant?.identity);
+            setTileSpeaking('local-participant', isLocalSpeaking);
+
+            // Check remotes
+            livekitParticipants.forEach((p, identity) => {
+              const isSpeaking = speakingIdentities.has(identity);
+              setTileSpeaking(identity, isSpeaking);
+            });
+          });
+
+          livekitRoom.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+            if (track.kind === 'audio') {
+              const audioEl = track.attach();
+              audioEl.id = `lk-audio-${participant.identity}`;
+              document.body.appendChild(audioEl);
+            } else if (track.kind === 'video') {
+              const tile = document.getElementById(`tile-${participant.identity}`);
+              const videoEl = document.getElementById(`video-${participant.identity}`);
+              if (videoEl) {
+                track.attach(videoEl);
+                videoEl.classList.add('active');
+                if (tile) tile.classList.add('has-video');
+              }
+            }
+          });
+
+          livekitRoom.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+            track.detach();
+            if (track.kind === 'audio') {
+              const el = document.getElementById(`lk-audio-${participant.identity}`);
+              if (el) el.remove();
+            } else if (track.kind === 'video') {
+              const tile = document.getElementById(`tile-${participant.identity}`);
+              const videoEl = document.getElementById(`video-${participant.identity}`);
+              if (videoEl) {
+                videoEl.classList.remove('active');
+                if (tile) tile.classList.remove('has-video');
+              }
+            }
+          });
+
+          livekitRoom.on(LivekitClient.RoomEvent.TrackMuted, (pub, participant) => {
+            setTileMuted(participant.identity, true);
+          });
+
+          livekitRoom.on(LivekitClient.RoomEvent.TrackUnmuted, (pub, participant) => {
+            setTileMuted(participant.identity, false);
+          });
+
+          // Connect to LiveKit server
+          await livekitRoom.connect(livekit_url, token);
+          console.log('Connected to LiveKit room:', livekitRoom.name);
+
+          // Publish local microphone track
+          livekitLocalTrack = await LivekitClient.createLocalAudioTrack({
+            echoCancellation: true,
+            noiseSuppression: true
+          });
+          await livekitRoom.localParticipant.publishTrack(livekitLocalTrack);
+
+          // Populate existing remote participants
+          livekitRoom.remoteParticipants.forEach((p) => {
+            livekitParticipants.set(p.identity, {
+              identity: p.identity,
+              name: p.name || p.identity,
+              isSpeaking: false,
+              isMuted: false
+            });
+            renderParticipantTile({
+              identity: p.identity,
+              name: p.name || p.identity,
+              isLocal: false,
+              isSpeaking: false,
+              isMuted: false
+            });
+          });
+
+          updateParticipantsCount();
+          connectionStatusPill.className = 'status-pill connected';
+          connectionStatusText.textContent = 'LiveKit Connected';
+
+        } catch (err) {
+          console.warn('LiveKit room connection warning (fallback to direct audio WS):', err);
+          connectionStatusPill.className = 'status-pill connected';
+          connectionStatusText.textContent = 'Voice Audio Live';
+        }
+      }
+
+      // ── Step 5: WebSocket Audio Streaming & Recording ────────────────
+      async function connectAudioWebSocket() {
+        try {
+          const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const wsHost = window.location.host || 'localhost:8000';
+          const wsUrl = `${wsProtocol}//${wsHost}/ws/room/${encodeURIComponent(meetingId)}`;
+
+          audioWs = new WebSocket(wsUrl);
+          audioWs.binaryType = 'arraybuffer';
+
+          audioWs.onopen = () => {
+            console.log('WebSocket audio connection established:', wsUrl);
+            startMicrophoneCapture();
+          };
+
+          audioWs.onmessage = (event) => {
+            try {
+              const msg = JSON.parse(event.data);
+              handleIncomingWsMessage(msg);
+            } catch (err) {
+              console.error('Error parsing WS message:', err, event.data);
+            }
+          };
+
+          audioWs.onclose = (e) => {
+            console.log('WebSocket audio disconnected:', e);
+          };
+
+          audioWs.onerror = (err) => {
+            console.warn('WebSocket audio stream error:', err);
+          };
+        } catch (err) {
+          console.error('Failed to initialize WebSocket:', err);
+        }
+      }
+
+      async function startMicrophoneCapture() {
+        try {
+          if (!micStream) {
+            micStream = await navigator.mediaDevices.getUserMedia({
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+              }
+            });
+          }
+
+          // Setup AudioContext for real-time visualizer & speech detection
+          setupAudioAnalyser(micStream);
+
+          // Setup MediaRecorder for streaming PCM/WebM to WS
+          let mimeType = 'audio/webm;codecs=opus';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'audio/webm';
+          }
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = '';
+          }
+
+          mediaRecorder = new MediaRecorder(micStream, mimeType ? { mimeType } : undefined);
+
+          mediaRecorder.ondataavailable = async (e) => {
+            if (e.data && e.data.size > 0 && audioWs && audioWs.readyState === WebSocket.OPEN) {
+              if (!isMuted) {
+                const arrayBuffer = await e.data.arrayBuffer();
+                audioWs.send(arrayBuffer);
+              }
+            }
+          };
+
+          // Send chunk every 1200ms
+          mediaRecorder.start(1200);
+          console.log('MediaRecorder started, pushing audio chunks to WS');
+        } catch (err) {
+          console.error('Microphone access denied or error:', err);
+          showToast('Microphone access error: ' + err.message, 'danger');
+        }
+      }
+
+      function setupAudioAnalyser(stream) {
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+
+          audioContext = new AudioContextClass();
+          const source = audioContext.createMediaStreamSource(stream);
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 64;
+          source.connect(analyser);
+
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+          const meterBars = [
+            document.getElementById('meter-bar-1'),
+            document.getElementById('meter-bar-2'),
+            document.getElementById('meter-bar-3'),
+            document.getElementById('meter-bar-4')
+          ];
+
+          function updateVisualizer() {
+            animationFrameId = requestAnimationFrame(updateVisualizer);
+
+            if (isMuted) {
+              meterBars.forEach(b => {
+                if (b) {
+                  b.style.height = '4px';
+                  b.style.backgroundColor = 'var(--text-muted)';
+                }
+              });
+              setTileSpeaking('local-participant', false);
+              return;
+            }
+
+            analyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+              sum += dataArray[i];
+            }
+            const average = sum / dataArray.length;
+
+            // Animate mini meter bars in bottom bar
+            meterBars.forEach((b, idx) => {
+              if (b) {
+                const val = (dataArray[idx * 3] || 0) / 255;
+                const h = Math.max(4, Math.round(val * 18));
+                b.style.height = `${h}px`;
+                b.style.backgroundColor = val > 0.3 ? 'var(--success)' : (val > 0.1 ? 'var(--secondary)' : 'var(--text-muted)');
+              }
+            });
+
+            // If audio volume exceeds speaking threshold
+            const speakingNow = average > 24;
+            setTileSpeaking('local-participant', speakingNow);
+          }
+
+          updateVisualizer();
+        } catch (e) {
+          console.warn('AudioAnalyser initialization warning:', e);
+        }
+      }
+
+      // ── Step 6: Handling Incoming WebSocket Messages ─────────────────
+      function handleIncomingWsMessage(msg) {
+        if (!msg || !msg.type) return;
+
+        if (msg.type === 'segment') {
+          // New transcript segment received!
+          appendTranscriptSegment(msg.data);
+        } else if (msg.type === 'pipeline_started') {
+          // Backend has started extraction pipeline, proceed to readback!
+          const targetUrl = msg.readback_url || `/app/readback.html?meeting=${encodeURIComponent(meetingId)}`;
+          redirectToReadback(targetUrl);
+        } else if (msg.type === 'status') {
+          showToast(msg.message || 'Processing…', 'info');
+        } else if (msg.type === 'error') {
+          showToast(msg.message || 'Stream error occurred', 'danger');
+        }
+      }
+
+      // ── Step 7: Transcript Feed Rendering ────────────────────────────
+      function appendTranscriptSegment(data) {
+        if (!data || !data.text || !data.text.trim()) return;
+
+        // Hide empty state if still visible
+        if (transcriptEmptyState && transcriptEmptyState.parentElement) {
+          transcriptEmptyState.remove();
+        }
+
+        transcriptSegments.push(data);
+
+        // Language tag & Flag logic
+        let langCode = (data.language || 'en').toLowerCase();
+        let isHindi = langCode === 'hi' || langCode === 'hin_deva' || langCode === 'hindi';
+        let flagEmoji = isHindi ? '🇮🇳' : '🇬🇧';
+        let langTitle = isHindi ? 'Hindi' : 'English';
+        let langClass = isHindi ? 'hindi' : 'english';
+
+        // Speaker name
+        let speakerName = data.speaker || participantName || 'Speaker';
+        let initials = getInitials(speakerName);
+        let avatarBg = getAvatarColor(speakerName);
+
+        // Timestamp formatting
+        let timeStr = formatSeconds(data.start || 0);
+
+        // Create Segment Card
+        const card = document.createElement('div');
+        card.className = `segment-card ${langClass}`;
+        card.dataset.lang = isHindi ? 'hi' : 'en';
+
+        // Check if translated text exists
+        let translationHtml = '';
+        if (data.translated_text && data.translated_text.trim() && data.translated_text.trim() !== data.text.trim()) {
+          translationHtml = `
+            <div class="segment-translation">
+              <div class="segment-translation-label">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>English Translation</span>
+              </div>
+              <div>${escapeHtml(data.translated_text)}</div>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="segment-header">
+            <div class="segment-speaker-info">
+              <div class="segment-speaker-avatar" style="background: ${avatarBg};">
+                ${escapeHtml(initials)}
+              </div>
+              <span class="segment-speaker-name">${escapeHtml(speakerName)}</span>
+            </div>
+            <div class="segment-meta">
+              <span class="lang-badge ${langClass}">
+                <span>${flagEmoji}</span>
+                <span>${langTitle}</span>
+              </span>
+              <span class="timestamp-badge">${timeStr}</span>
+            </div>
+          </div>
+          <div class="segment-body">${escapeHtml(data.text)}</div>
+          ${translationHtml}
+        `;
+
+        // Filter check
+        if (activeFilterLang !== 'all' && card.dataset.lang !== activeFilterLang) {
+          card.style.display = 'none';
+        }
+
+        transcriptFeed.appendChild(card);
+
+        // Auto scroll to bottom
+        if (autoScrollCheckbox.checked) {
+          transcriptFeed.scrollTop = transcriptFeed.scrollHeight;
+        }
+      }
+
+      // ── Step 8: Participant Tiles Management ────────────────────────
+      function renderParticipantTile(data) {
+        const { identity, name, isLocal, isSpeaking, isMuted } = data;
+
+        // Check if tile already exists
+        let tile = document.getElementById(`tile-${identity}`);
+        if (tile) {
+          updateTileProps(tile, data);
+          return;
+        }
+
+        // Remove waiting card if it exists
+        const waitingCard = document.getElementById('waiting-card');
+        if (waitingCard && !isLocal) {
+          waitingCard.remove();
+        }
+
+        tile = document.createElement('div');
+        tile.className = `participant-tile ${isSpeaking ? 'speaking' : ''}`;
+        tile.id = `tile-${identity}`;
+
+        const initials = getInitials(name);
+        const avatarBg = getAvatarColor(name);
+
+        tile.innerHTML = `
+          <video class="tile-video" id="video-${identity}" autoplay playsinline ${isLocal ? 'muted' : ''}></video>
+
+          <div class="avatar-wrapper">
+            <div class="speaking-rings"></div>
+            <div class="participant-avatar" style="background: ${avatarBg};">
+              ${escapeHtml(initials)}
+            </div>
+          </div>
+
+          <div class="speaking-badge">
+            <div class="sound-bars">
+              <div class="sound-bar"></div>
+              <div class="sound-bar"></div>
+              <div class="sound-bar"></div>
+              <div class="sound-bar"></div>
+            </div>
+            <span>Speaking</span>
+          </div>
+
+          <div class="participant-name-row">
+            <span class="participant-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+            ${isLocal ? '<span class="you-pill">You</span>' : ''}
+          </div>
+
+          <div class="tile-status-row">
+            <div class="mic-status-pill ${isMuted ? 'muted' : ''}" id="tile-mic-${identity}" title="${isLocal ? 'Click to toggle mute' : 'Microphone status'}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" x2="12" y1="19" y2="22"></line>
+              </svg>
+              <span class="mic-text">${isMuted ? 'Muted' : 'Mic Active'}</span>
+            </div>
+          </div>
+        `;
+
+        if (isLocal) {
+          tile.querySelector(`#tile-mic-${identity}`).addEventListener('click', toggleMute);
+          if (localVideoStream) {
+            const vid = tile.querySelector(`#video-${identity}`);
+            if (vid) {
+              vid.srcObject = localVideoStream;
+              vid.classList.add('active');
+              tile.classList.add('has-video');
+            }
+          }
+        }
+
+        tilesGrid.appendChild(tile);
+
+        // If only local participant exists, append the inviting waiting card
+        checkAndRenderWaitingCard();
+      }
+
+      function updateTileProps(tile, data) {
+        if (!tile) return;
+        if (data.isSpeaking) {
+          tile.classList.add('speaking');
+        } else {
+          tile.classList.remove('speaking');
+        }
+      }
+
+      function setTileSpeaking(identity, isSpeaking) {
+        const tile = document.getElementById(`tile-${identity}`);
+        if (!tile) return;
+        if (isSpeaking) {
+          tile.classList.add('speaking');
+        } else {
+          tile.classList.remove('speaking');
+        }
+      }
+
+      function setTileMuted(identity, muted) {
+        const tile = document.getElementById(`tile-${identity}`);
+        if (!tile) return;
+        const micPill = tile.querySelector(`#tile-mic-${identity}`);
+        if (micPill) {
+          if (muted) {
+            micPill.classList.add('muted');
+            micPill.querySelector('.mic-text').textContent = 'Muted';
+          } else {
+            micPill.classList.remove('muted');
+            micPill.querySelector('.mic-text').textContent = 'Mic Active';
+          }
+        }
+      }
+
+      function removeParticipantTile(identity) {
+        const tile = document.getElementById(`tile-${identity}`);
+        if (tile) tile.remove();
+        checkAndRenderWaitingCard();
+      }
+
+      function checkAndRenderWaitingCard() {
+        const remoteTiles = tilesGrid.querySelectorAll('.participant-tile:not(#tile-local-participant)');
+        let waitingCard = document.getElementById('waiting-card');
+
+        if (remoteTiles.length === 0) {
+          if (!waitingCard) {
+            waitingCard = document.createElement('div');
+            waitingCard.className = 'waiting-card';
+            waitingCard.id = 'waiting-card';
+            waitingCard.innerHTML = `
+              <div class="waiting-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <line x1="19" y1="8" x2="19" y2="14"></line>
+                  <line x1="22" y1="11" x2="16" y2="11"></line>
+                </svg>
+              </div>
+              <div class="waiting-title">Waiting for colleagues…</div>
+              <div class="waiting-subtitle">Invite team members to join this live Hindi & English intelligence session.</div>
+              <button class="waiting-btn" id="btn-waiting-invite">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                <span>Share Meeting Link</span>
+              </button>
+            `;
+            tilesGrid.appendChild(waitingCard);
+            document.getElementById('btn-waiting-invite').addEventListener('click', openShareModal);
+          }
+        } else {
+          if (waitingCard) waitingCard.remove();
+        }
+      }
+
+      function updateParticipantsCount() {
+        const total = 1 + livekitParticipants.size;
+        participantsCountText.textContent = `Participants: ${total}`;
+      }
+
+      // ── Step 9: Audio Mute / Unmute Toggle ────────────────────────────
+      function toggleMute() {
+        isMuted = !isMuted;
+
+        // Toggle LiveKit Track
+        if (livekitLocalTrack) {
+          if (isMuted) {
+            livekitLocalTrack.mute();
+          } else {
+            livekitLocalTrack.unmute();
+          }
+        }
+
+        // Toggle Local MediaStream Tracks
+        if (micStream) {
+          micStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+        }
+
+        // Update Bottom Bar Button UI
+        if (isMuted) {
+          btnToggleMic.className = 'control-btn muted-control';
+          micLabel.textContent = 'Unmute';
+          micIconActive.style.display = 'none';
+          micIconMuted.style.display = 'block';
+          setTileMuted('local-participant', true);
+          setTileSpeaking('local-participant', false);
+          showToast('Microphone muted', 'info');
+        } else {
+          btnToggleMic.className = 'control-btn active-control';
+          micLabel.textContent = 'Mute';
+          micIconActive.style.display = 'block';
+          micIconMuted.style.display = 'none';
+          setTileMuted('local-participant', false);
+          showToast('Microphone active', 'success');
+        }
+      }
+
+      // ── Step 9b: Camera Video Toggle ──────────────────────────────
+      async function toggleCamera() {
+        try {
+          if (!isCameraOn) {
+            // Request camera video stream
+            localVideoStream = await navigator.mediaDevices.getUserMedia({
+              video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+              audio: false
+            });
+            const localVideo = document.getElementById('video-local-participant');
+            const localTile = document.getElementById('tile-local-participant');
+            if (localVideo) {
+              localVideo.srcObject = localVideoStream;
+              localVideo.classList.add('active');
+            }
+            if (localTile) {
+              localTile.classList.add('has-video');
+            }
+
+            // Publish to LiveKit room if connected
+            if (livekitRoom && typeof LivekitClient !== 'undefined') {
+              try {
+                livekitVideoTrack = await LivekitClient.createLocalVideoTrack({
+                  resolution: LivekitClient.VideoPresets.h720
+                });
+                await livekitRoom.localParticipant.publishTrack(livekitVideoTrack);
+              } catch (lkErr) {
+                console.warn('LiveKit video publish warning:', lkErr);
+              }
+            }
+
+            isCameraOn = true;
+            btnToggleCam.classList.add('active-control');
+            camLabel.textContent = 'Stop Video';
+            camIconActive.style.display = 'block';
+            camIconOff.style.display = 'none';
+            showToast('Webcam video active', 'success');
+          } else {
+            // Turn off camera
+            if (localVideoStream) {
+              localVideoStream.getTracks().forEach(t => t.stop());
+              localVideoStream = null;
+            }
+            const localVideo = document.getElementById('video-local-participant');
+            const localTile = document.getElementById('tile-local-participant');
+            if (localVideo) {
+              localVideo.srcObject = null;
+              localVideo.classList.remove('active');
+            }
+            if (localTile) {
+              localTile.classList.remove('has-video');
+            }
+
+            if (livekitVideoTrack && livekitRoom) {
+              try {
+                await livekitRoom.localParticipant.unpublishTrack(livekitVideoTrack);
+                livekitVideoTrack.stop();
+                livekitVideoTrack = null;
+              } catch (lkErr) {
+                console.warn('LiveKit video unpublish warning:', lkErr);
+              }
+            }
+
+            isCameraOn = false;
+            btnToggleCam.classList.remove('active-control');
+            camLabel.textContent = 'Start Video';
+            camIconActive.style.display = 'none';
+            camIconOff.style.display = 'block';
+            showToast('Camera stopped', 'info');
+          }
+        } catch (err) {
+          console.error('Camera access error:', err);
+          showToast('Could not access camera: ' + (err.message || 'Permission denied'), 'danger');
+        }
+      }
+
+      // ── Step 9c: Screen Share Toggle ──────────────────────────────
+      async function toggleScreenShare() {
+        try {
+          if (!isScreenSharing) {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({
+              video: { cursor: 'always' },
+              audio: false
+            });
+            const localVideo = document.getElementById('video-local-participant');
+            const localTile = document.getElementById('tile-local-participant');
+            if (localVideo) {
+              localVideo.srcObject = screenStream;
+              localVideo.classList.add('active');
+            }
+            if (localTile) {
+              localTile.classList.add('has-video');
+            }
+
+            // Detect when user clicks browser's native "Stop sharing" float bar
+            screenStream.getVideoTracks()[0].onended = () => {
+              if (isScreenSharing) toggleScreenShare();
+            };
+
+            isScreenSharing = true;
+            btnToggleScreen.classList.add('active-control');
+            screenLabel.textContent = 'Stop Sharing';
+            showToast('Screen sharing started', 'success');
+          } else {
+            if (screenStream) {
+              screenStream.getTracks().forEach(t => t.stop());
+              screenStream = null;
+            }
+            const localVideo = document.getElementById('video-local-participant');
+            const localTile = document.getElementById('tile-local-participant');
+            if (isCameraOn && localVideoStream) {
+              if (localVideo) localVideo.srcObject = localVideoStream;
+            } else {
+              if (localVideo) {
+                localVideo.srcObject = null;
+                localVideo.classList.remove('active');
+              }
+              if (localTile) localTile.classList.remove('has-video');
+            }
+
+            isScreenSharing = false;
+            btnToggleScreen.classList.remove('active-control');
+            screenLabel.textContent = 'Share Screen';
+            showToast('Screen sharing stopped', 'info');
+          }
+        } catch (err) {
+          if (err.name !== 'NotAllowedError') {
+            console.error('Screen share error:', err);
+            showToast('Screen share failed: ' + err.message, 'danger');
+          }
+        }
+      }
+
+      // ── Step 10: Share Link Modal Handlers ───────────────────────────
+      function openShareModal() {
+        shareUrlInput.value = window.location.href;
+        modalShareLink.classList.add('active');
+        copyBtnText.textContent = 'Copy';
+        btnCopyUrl.classList.remove('copied');
+      }
+
+      function closeShareModal() {
+        modalShareLink.classList.remove('active');
+      }
+
+      async function copyShareUrl() {
+        try {
+          await navigator.clipboard.writeText(shareUrlInput.value);
+          btnCopyUrl.classList.add('copied');
+          copyBtnText.textContent = 'Copied!';
+          showToast('Meeting link copied to clipboard!', 'success');
+          setTimeout(() => {
+            copyBtnText.textContent = 'Copy';
+            btnCopyUrl.classList.remove('copied');
+          }, 2400);
+        } catch (err) {
+          // Fallback
+          shareUrlInput.select();
+          document.execCommand('copy');
+          showToast('Link copied to clipboard!', 'success');
+        }
+      }
+
+      async function copyMeetingId() {
+        try {
+          await navigator.clipboard.writeText(meetingId);
+          showToast(`Meeting ID copied: ${meetingId}`, 'success');
+        } catch (err) {
+          showToast(`Meeting ID: ${meetingId}`, 'info');
+        }
+      }
+
+      async function copyFullTranscript() {
+        if (transcriptSegments.length === 0) {
+          showToast('No transcript segments to copy yet.', 'info');
+          return;
+        }
+
+        const lines = transcriptSegments.map(s => {
+          const spk = s.speaker || participantName || 'Speaker';
+          const time = formatSeconds(s.start || 0);
+          const lang = (s.language || 'en').toUpperCase();
+          let line = `[${time}] ${spk} (${lang}): ${s.text}`;
+          if (s.translated_text && s.translated_text !== s.text) {
+            line += `\n       [Translated En]: ${s.translated_text}`;
+          }
+          return line;
+        });
+
+        try {
+          await navigator.clipboard.writeText(lines.join('\n\n'));
+          showToast('Complete transcript copied to clipboard!', 'success');
+        } catch (e) {
+          showToast('Transcript ready in console.', 'info');
+        }
+      }
+
+      // ── Step 11: End Meeting & Pipeline Handlers ─────────────────────
+      function openEndConfirmModal() {
+        modalEndConfirm.classList.add('active');
+        modalEndConfirm.classList.add('open');
+      }
+
+      function closeEndConfirmModal() {
+        modalEndConfirm.classList.remove('active');
+        modalEndConfirm.classList.remove('open');
+      }
+
+      async function executeEndMeeting() {
+        modalEndConfirm.classList.remove('active');
+        modalEndConfirm.classList.remove('open');
+        endingOverlay.classList.add('active');
+
+        // Stop Local Recording & Media Streams
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          try { mediaRecorder.stop(); } catch (e) {}
+        }
+        if (micStream) {
+          micStream.getTracks().forEach(t => t.stop());
+        }
+        if (localVideoStream) {
+          localVideoStream.getTracks().forEach(t => t.stop());
+        }
+        if (screenStream) {
+          screenStream.getTracks().forEach(t => t.stop());
+        }
+
+        // Send 'end_meeting' over WebSocket
+        if (audioWs && audioWs.readyState === WebSocket.OPEN) {
+          try {
+            audioWs.send(JSON.stringify({ type: 'end_meeting' }));
+          } catch (e) {
+            console.warn('WS send end_meeting failed:', e);
+          }
+        }
+
+        // Disconnect LiveKit Room
+        if (livekitRoom) {
+          try { livekitRoom.disconnect(); } catch (e) {}
+        }
+
+        // Fallback redirection after 2.8 seconds in case WS response is delayed
+        setTimeout(() => {
+          const fallbackUrl = (window.location.pathname.startsWith('/app'))
+            ? `/app/readback.html?meeting=${encodeURIComponent(meetingId)}`
+            : `readback.html?meeting=${encodeURIComponent(meetingId)}`;
+          redirectToReadback(fallbackUrl);
+        }, 2800);
+      }
+
+      function redirectToReadback(targetUrl) {
+        window.location.href = targetUrl;
+      }
+
+      // ── Step 12: Event Listeners Setup ───────────────────────────────
+      function setupEventListeners() {
+        // Name modal
+        const linkNameLogin = document.getElementById('link-name-login');
+        if (linkNameLogin) {
+          linkNameLogin.href = `/app/login.html?redirect=${encodeURIComponent(window.location.href)}`;
+        }
+        btnNameContinue.addEventListener('click', handleNameSubmitted);
+        inputUserName.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') handleNameSubmitted();
+        });
+
+        // Consent modal
+        btnConsentAgree.addEventListener('click', handleConsentAgreed);
+        btnConsentLeave.addEventListener('click', handleConsentDeclined);
+
+        // Share modal
+        btnOpenShare.addEventListener('click', openShareModal);
+        btnCloseShare.addEventListener('click', closeShareModal);
+        btnDoneShare.addEventListener('click', closeShareModal);
+        btnCopyUrl.addEventListener('click', copyShareUrl);
+        meetingIdBadge.addEventListener('click', copyMeetingId);
+
+        // Transcript actions
+        btnCopyTranscript.addEventListener('click', copyFullTranscript);
+
+        // Filter pills
+        document.querySelectorAll('.lang-filter-pill').forEach(pill => {
+          pill.addEventListener('click', () => {
+            document.querySelectorAll('.lang-filter-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            activeFilterLang = pill.dataset.lang;
+            
+            // Filter cards
+            document.querySelectorAll('.segment-card').forEach(card => {
+              if (activeFilterLang === 'all' || card.dataset.lang === activeFilterLang) {
+                card.style.display = 'block';
+              } else {
+                card.style.display = 'none';
+              }
+            });
+          });
+        });
+
+        // Mic toggle
+        btnToggleMic.addEventListener('click', toggleMute);
+
+        // Camera and Screen share toggle
+        btnToggleCam.addEventListener('click', toggleCamera);
+        btnToggleScreen.addEventListener('click', toggleScreenShare);
+
+        // End meeting
+        btnEndMeeting.addEventListener('click', (e) => {
+          e.preventDefault();
+          openEndConfirmModal();
+        });
+        btnCancelEnd.addEventListener('click', closeEndConfirmModal);
+        btnConfirmEnd.addEventListener('click', executeEndMeeting);
+        modalEndConfirm.addEventListener('click', (e) => {
+          if (e.target === modalEndConfirm) closeEndConfirmModal();
+        });
+
+        // Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+          // If in an input, don't hijack keys
+          if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+
+          if (e.key === 'm' || e.key === 'M') {
+            toggleMute();
+          } else if (e.key === 'v' || e.key === 'V') {
+            toggleCamera();
+          } else if (e.key === 'Escape') {
+            closeShareModal();
+            closeEndConfirmModal();
+          }
+        });
+      }
+
+      // Start application lifecycle
+      window.addEventListener('DOMContentLoaded', init);
+
+    })();
+  </script>
+</body>
+</html>

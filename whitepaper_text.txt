@@ -1,0 +1,342 @@
+
+--- PAGE 1 ---
+White Paper: Platform-Independent, Evidence-Linked Meeting Intelligence for Hindi–English Teams
+Platform-Independent, Evidence-Linked
+Meeting Intelligence for Hindi–English
+Teams
+A white paper on the AI-Powered Real-Time Meeting Decision Intelligence System
+Author: Gaurav · B.Tech, Computer Science and Engineering · ITM University, Gwalior
+Date: October 2026 Status: Proposal and design. No system has been built or measured
+yet; all outcomes below are targets, not results.
+1. Executive summary
+Meetings are where decisions are made, yet the record of those decisions is usually a
+recording nobody replays or a summary nobody verifies. Large platforms now ship AI
+notetakers, and a crowded market of third-party tools works across Zoom, Google Meet
+and Microsoft Teams. The transcription and summary problem is therefore largely
+addressed. What remains weaker is trust: it is hard to see why an AI claimed that “Rahul
+will submit the report by Friday,” whether anyone agreed, and whether the tool
+understood a meeting that switched between Hindi and English mid-sentence.
+This paper proposes a system built around four commitments:
+1. One open Meeting Record. Every input, whether an uploaded file, a live microphone, a
+browser meeting room or a connected platform, is converted into the same JSON
+structure, so the AI pipeline is written once.
+2. Evidence on every claim. Each decision or action item links to the transcript line,
+timestamp and audio clip that support it. Unknown owners and deadlines stay empty
+rather than guessed.
+3. Participant read-back. Before a meeting ends, people confirm, edit or reject what the
+AI understood. Only confirmed items become official.
+4. Local-first processing and measured accuracy. Speech recognition and extraction run
+on the user’s own machine by default, and the project publishes its own word-error and
+extraction measurements on Hindi, English and Hinglish meetings.
+On top of this foundation the system adds speaker attribution, a decision graph with
+impact analysis, a browser meeting room, and optional platform connectors.
+Page 1 of 10
+
+--- PAGE 2 ---
+White Paper: Platform-Independent, Evidence-Linked Meeting Intelligence for Hindi–English Teams
+The contribution is integration and evaluation, not a new speech or language model. The
+paper also takes care to separate what existing products are documented to do from
+what the proposal adds.
+2. The problem
+Decisions are lost. Participants must listen, speak and take notes at once. Action items,
+owners and deadlines are the first things to disappear, and long meetings are expensive
+to review.
+Platform AI is tied to the platform. Reviews of the major suites note that Microsoft
+Copilot’s notes work only inside Teams, and that Gemini’s notes can be unstructured free
+text with little separation by speaker or topic [3]. Features are often bundled with higher-
+priced plans [3].
+Accuracy is uneven. Third-party analysis reports that Google Meet live transcription
+struggles with heavy accents, technical jargon and overlapping speech [5]. Teams’ AI
+Interpreter is described as depending on connection quality, accents and specialised
+vocabulary [6]. A review of Zoom’s assistant mentions meetings that produced no
+summary and no error message [1].
+Notes are not accountability. A summary describes what was said, but does not check
+who agreed, which earlier decision a new one replaces, or which tasks a changed deadline
+affects.
+Hindi–English meetings are a special case. Indian teams often mix languages within one
+sentence. Vendors publish language counts, for example 60+ languages for Fireflies and
+30+ for tl;dv [11], but a language count says little about how well a tool handles code-
+switching. The sources reviewed did not publish accuracy figures for mixed Hindi–English
+meetings.
+3. Landscape
+This review is based on vendor pages and third-party articles read in October 2026.
+Vendor claims were not independently tested, and products change quickly.
+Page 2 of 10
+
+--- PAGE 3 ---
+White Paper: Platform-Independent, Evidence-Linked Meeting Intelligence for Hindi–English Teams
+Category Examples What is documented Limitation noted in
+sources
+Platform Zoom AI Summaries, tasks, Tied to one
+assistants Companion 3.0, drafting, live ecosystem; some
+Microsoft Copilot translation, catch-up features need paid
+and Teams for late joiners [1][2] tiers; quality issues
+Interpreter, Gemini [4] reported [1][3][5][6]
+in Google Meet
+Cross-platform Otter, Fireflies, Work across Zoom, Cloud services;
+notetakers Read.ai, tl;dv, Meet and Teams; language depth varies
+Fathom, Fellow some record without by vendor
+a visible bot;
+searchable archives
+[8][9][10][11]
+Local-first Meetily, Hyprnote Transcription and Focus on notes and
+assistants summaries that run summaries rather
+offline using open than evidence-linked,
+models such as confirmed decisions
+Whisper and local
+LLMs [12][13]
+Cross-meeting Hedy AI, Sentra Tracking themes, Commercial products;
+memory decisions and methods not open to
+commitments across inspection
+meetings;
+contradiction
+detection claimed by
+one vendor [14][15]
+Meeting-room Pexip Bridges Teams, Zoom, Aimed at rooms and
+interoperability Meet and SIP/H.323 enterprises, not
+room systems [16] individual AI notes
+Bot APIs Recall.ai One API to send a bot Developer
+into Zoom, Meet, infrastructure; audio
+Teams and other passes through a third
+platforms and receive party
+transcripts [17]
+Page 3 of 10
+
+--- PAGE 4 ---
+White Paper: Platform-Independent, Evidence-Linked Meeting Intelligence for Hindi–English Teams
+Native, bot-free capture is also emerging. One source reported that Zoom’s Realtime
+Media Streams reached all developers in June 2025, while Google’s Meet Media API was
+still in developer preview as of April 2026 [18].
+4. Gaps and positioning
+The landscape shows that capture, transcription, summaries and even cross-meeting
+decision tracking now exist in products. This paper therefore does not claim novelty for
+those capabilities. The following combination is, in the sources reviewed, not publicly
+documented as a single offering:
+A neutral meeting space where guests join from a browser with no install, with the AI
+built into the space rather than attached afterwards, and not limited to meeting rooms.
+Visible evidence and participant read-back as a core workflow, with confirmed,
+edited and unconfirmed items kept distinct in the report.
+Published, reproducible accuracy figures on Hindi, English and Hinglish meetings.
+An open Meeting Record format that lets output from different sources feed one
+decision graph.
+Local operation alone is not a gap, because local assistants already exist [12][13]. Here it is
+an enabler that supports privacy, while the differentiator is the combination above.
+Statements of absence reflect the limited search done for this paper and should be
+phrased as “not publicly documented,” not as proof that no product does this.
+5. Proposed system
+5.1 Design principles
+Evidence before assertion. An item without a supporting transcript line is not shown
+as fact.
+Unknown stays unknown. Missing owners and deadlines are flagged, never invented.
+Humans decide. AI output is a proposal until participants confirm it.
+One format, many sources. All inputs normalise to the Meeting Record.
+Local by default. Cloud services are optional and clearly labelled.
+5.2 Architecture
+The pipeline has six stages:
+Page 4 of 10
+
+--- PAGE 5 ---
+White Paper: Platform-Independent, Evidence-Linked Meeting Intelligence for Hindi–English Teams
+1. Input. An uploaded recording, live microphone or shared-tab audio, a browser meeting
+room, or a connected platform bot.
+2. Speech recognition. faster-whisper produces timestamped segments with per-
+segment language detection [19].
+3. Translation (optional). A multilingual model such as NLLB-200 translates segments
+between Hindi and English.
+4. Speaker attribution. In a browser room, each participant’s own audio stream identifies
+the speaker. For mixed audio, a diarization pipeline such as pyannote.audio assigns
+speaker labels after the meeting [20].
+5. Extraction. A local language model, run through a tool such as Ollama, returns schema-
+constrained JSON listing decisions, action items, owners, deadlines and open
+questions, each with evidence.
+6. Confirmation and reporting. Participants review items in a read-back step. The
+confirmed record is stored and exported as a report, and optionally added to the
+decision graph.
+5.3 The Meeting Record
+The Meeting Record is a small, open JSON structure. A simplified example:
+{
+"meeting_id": "m1",
+"source": "upload",
+"segments": [
+{"id": 0, "start": 0.0, "end": 4.2, "speaker": "Speaker 1", "text":
+"..."}
+],
+"items": [
+{"id": "a1", "type": "action", "text": "Submit the report",
+"owner": null, "deadline": "Friday",
+"evidence": [{"segment_id": 0}], "status": "proposed"}
+],
+"edges": [
+{"from": "a1", "to": "d1", "type": "depends_on", "status": "proposed"}
+]
+}
+The source field records where the audio came from. The status field takes one of
+proposed , confirmed , edited or rejected . The edges field supports the decision
+graph. The structure is validated in code so malformed model output is rejected.
+Page 5 of 10
+
+--- PAGE 6 ---
+White Paper: Platform-Independent, Evidence-Linked Meeting Intelligence for Hindi–English Teams
+5.4 Evidence checking
+The language model must cite the segment identifiers and exact words that support each
+item. Code then checks that the quoted words actually appear in the cited segment.
+Items that fail the check are marked unsupported or removed. This simple rule reduces
+hallucinated tasks and makes every claim inspectable.
+5.5 Participant read-back
+Near the end of a meeting, or when the host chooses to wrap up, the system lists each
+extracted item with its evidence: the transcript line, a timestamp and a short audio clip.
+Participants select Confirm, Edit or Reject. The final report separates confirmed items,
+edited items and unconfirmed items. Only confirmed items enter the decision graph. This
+turns “the AI suggests” into “the people agreed,” and the correction rate becomes a
+measurable quality signal.
+5.6 Decision graph and impact analysis
+Confirmed items form a small knowledge graph. Nodes are decisions, actions, deadlines,
+people and meetings. Edges include assigned_to , due_on , depends_on and
+supersedes , each with evidence and a proposed or confirmed status. The language
+model may propose dependency edges, but a user must confirm them.
+Three functions build on the graph:
+Conflict flagging. When a new decision concerns the same topic as an earlier
+confirmed one, the system shows both evidence lines and marks a possible conflict.
+Impact analysis. If a decision or deadline changes, the system traverses known edges
+and lists the tasks, owners and deadlines that may be affected, with the path and
+evidence.
+What-if queries. A user can ask what is affected if a deadline moves. The answer is
+limited to known relationships and is labelled advisory, not a prediction.
+5.7 Browser meeting room
+A self-hostable WebRTC framework such as LiveKit or Jitsi lets guests join by link with
+nothing to install. Each participant’s browser sends its own microphone audio, tagged
+with a name, to the backend after an explicit consent click. This gives speaker identity
+without diarization and avoids server-side audio mixing. The room is intended for small
+meetings of a few people, not for competing with large video platforms.
+Page 6 of 10
+
+--- PAGE 7 ---
+White Paper: Platform-Independent, Evidence-Linked Meeting Intelligence for Hindi–English Teams
+5.8 Platform connectors
+For people who stay in Zoom, Meet or Teams, a connector adapter converts platform data
+into a Meeting Record. Two approaches are possible. A third-party bot API can join a
+meeting from its link and stream transcripts back [17]. Native streams, such as Zoom’s
+Realtime Media Streams, avoid a visible bot but depend on platform programs and their
+maturity [18]. Connectors involve a third party, so they are labelled connected mode and
+sit alongside the local default. They add convenience rather than novelty, since bot-based
+notetakers across these platforms already exist.
+6. Privacy, consent and responsible use
+Consent first. Recording starts only after the host starts a session and each
+participant accepts a visible recording notice.
+Local by default. In local mode, audio and transcripts stay on the user’s device or
+server. In connected mode, the interface states which external service receives data.
+Retention and deletion. Users can delete recordings and generated artifacts
+according to a configured policy.
+Platform terms and law. Connectors must respect each platform’s terms and
+applicable privacy rules, which should be checked before deployment.
+No identity claims. Speaker labels such as “Speaker 1” are not real identities unless the
+user assigns them.
+Human oversight. AI outputs are decision support. The system never makes binding
+decisions for participants.
+7. Evaluation plan
+The project will report its own measurements instead of marketing claims. Because the
+dataset will be small, results will be described as a pilot study with error analysis.
+Data. Eight to ten role-played meetings of five to ten minutes each, covering Hindi,
+English and Hinglish, with two or three speakers. Each recording is hand-labelled with a
+reference transcript and the correct decisions and action items.
+Page 7 of 10
+
+--- PAGE 8 ---
+White Paper: Platform-Independent, Evidence-Linked Meeting Intelligence for Hindi–English Teams
+Measure How it is computed
+Word error rate Compare system transcripts with reference
+transcripts after normalising script (Devanagari or
+Roman) and case
+Extraction quality Precision, recall and F1 of decisions and action
+items against hand labels
+Evidence accuracy Share of items whose linked line truly supports
+them
+Read-back correction rate Share of items edited or rejected by participants
+Latency Time from speech to on-screen text, median and
+slowest 5%
+Graph scenarios In three to five two-meeting scenarios, whether
+impact analysis finds the correct affected tasks
+Two configurations will be compared, for example different Whisper model sizes, and
+where possible a platform’s own captions as a baseline.
+8. Scope and roadmap
+Phase Content Priority
+A Core pipeline, evidence checking, read-back and Essential
+evaluation
+B Speaker attribution for mixed audio Add if time allows
+C Decision graph, conflict flagging, impact and what- Add if time allows
+if analysis
+D Browser meeting room Add if time allows
+E Platform connectors in connected mode Lowest priority
+Phase A must work before later phases begin. If time runs short, features are dropped in
+the order E, D, C, B, because the later phases depend more on outside services and carry
+more risk.
+Page 8 of 10
+
+--- PAGE 9 ---
+White Paper: Platform-Independent, Evidence-Linked Meeting Intelligence for Hindi–English Teams
+9. Limitations and risks
+Small local models are weaker. They may struggle with Hindi and with producing valid
+structured output. Schema-constrained generation and early testing mitigate this, and
+an optional text-only cloud setting can be offered.
+Hinglish is hard. Whisper may output Devanagari or Roman script inconsistently, and
+accuracy may be modest. Results will be reported honestly with failure examples.
+Adoption. A new meeting space only helps if people use it. It is positioned for quick
+meetings and guests, not as a replacement for existing platforms.
+“Nothing to install” has limits. It applies to guests who open the link. People who
+remain inside another platform cannot join the browser room directly.
+Connectors depend on third parties. Their pricing, terms and capabilities can change,
+and they conflict with strict offline operation.
+Competitor claims. Statements about other products rely on public documentation
+and may be incomplete.
+Pilot-scale evidence. A small dataset supports indicative results only.
+10. Conclusion
+AI meeting notes are no longer scarce. Trustworthy ones are. The proposed system aims
+to make meeting AI inspectable and accountable: every claim carries evidence,
+participants confirm what becomes official, and accuracy is measured on the mixed
+Hindi–English speech that real Indian teams use. A local-first design and an open Meeting
+Record keep it independent of any single platform, while the decision graph shows how
+one decision affects another. The work is an integration and evaluation contribution, and
+its value will be judged by the measurements it reports.
+References
+Products and market claims were read from public web pages in October 2026. Vendor
+and third-party blog sources are secondary and were not independently verified.
+Landscape sources
+[1] Zoom AI Companion 3.0 review. summarizemeeting.com/en/tool/zoom-ai [2] Zoom, “AI
+Companion 3.0 and Zoom Workplace.” news.zoom.com/ai-companion-3-0-and-zoom-
+workplace/ [3] Meetingnotes, “Google Gemini vs Microsoft Copilot: Which AI Is Best for
+Meeting Notes?” meetingnotes.com/blog/google-gemini-microsoft-copilot-ai-meeting-
+Page 9 of 10
+
+--- PAGE 10 ---
+White Paper: Platform-Independent, Evidence-Linked Meeting Intelligence for Hindi–English Teams
+notes [4] TechRadar, coverage of Ask Gemini in Google Meet. techradar.com/pro/gemini-
+is-coming-to-solve-all-your-google-meet-meeting-issues-whether-you-want-it-or-not [5]
+Happy Scribe, “Limitations of Google Meet Live Transcriptions.”
+happyscribe.com/blog/limitations-of-google-meet-live-transcriptions [6] MeetGeek,
+“Everything About Microsoft Teams AI Interpreter.” meetgeek.ai/blog/microsoft-teams-ai-
+interpreter [7] EmpowerSuite, “Putting Teams’ AI features to the test” (Teams Premium
+live translation). empowersuite.com/en/blog/artificial-intelligence-teams-premium [8]
+Meetingnotes, “7 Best AI Meeting Assistants for Managers in 2026” (Fellow).
+meetingnotes.com/blog/ai-meeting-manager [9] Read AI, “Best AI Meeting Assistants.”
+read.ai/articles/best-ai-meeting-assistants [10] Subanana, “AI Note Taker for Microsoft
+Teams (2026).” subanana.com/en/blog/ai-note-taker-for-microsoft-teams [11]
+SummarizeMeeting, “Best AI Meeting Assistants” (platform and language comparison).
+summarizemeeting.com/en/blog/best-ai-meeting-assistants [12] Meetily project
+repository. github.com/zackriya-meetily/meetily [13] Hyprnote project summary.
+sourcepulse.org/projects/2335280 [14] Hedy AI, cross-session meeting intelligence
+announcement, November 2025. techintelpro.com/news/ai/enterprise-ai/hedy-ai-
+launches-cross-session-meeting-intelligence-tool [15] Sentra, “AI Meeting Memory.”
+sentra.app/articles/ai-meeting-memory [16] Pexip, Microsoft Teams video interoperability.
+pexip.com/contact/microsoft-teams-video-conferencing-interoperability [17] Recall.ai,
+Meeting Bot API. recall.ai/product/meeting-bot-api [18] Fora Soft, “Meeting bot API
+architecture.” forasoft.com/blog/article/meeting-bot-api-architecture
+Technical and academic sources
+[19] A. Radford, J. W. Kim, T. Xu, G. Brockman, C. McLeavey and I. Sutskever, “Robust
+Speech Recognition via Large-Scale Weak Supervision,” ICML, PMLR vol. 202, 2023. [20]
+H. Bredin, “pyannote.audio 2.1 speaker diarization pipeline: principle, benchmark, and
+recipe,” Interspeech, 2023. [21] G. Tur et al., “The CALO Meeting Assistant System,” IEEE
+Transactions on Audio, Speech, and Language Processing, vol. 18, no. 6, 2010. [22] Y. Hu et
+al., “MeetingBank: A Benchmark Dataset for Meeting Summarization,” ACL, 2023. [23] L.
+Golia and J. Kalita, “Action-Item-Driven Summarization of Long Meeting Transcripts,”
+arXiv:2312.17581, 2023.
+Page 10 of 10

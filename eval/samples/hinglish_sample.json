@@ -1,0 +1,22 @@
+{
+  "transcript": [
+    {"id": 0, "start": 0.0,  "end": 4.2,  "text": "Toh humne decide kiya ki hum PostgreSQL use karenge database ke liye.", "language": "hi"},
+    {"id": 1, "start": 4.2,  "end": 9.0,  "text": "Aur authentication ke liye hum OAuth2 with Google login implement karenge.", "language": "hi"},
+    {"id": 2, "start": 9.0,  "end": 14.5, "text": "Priya will handle the backend API integration by Wednesday.", "language": "en"},
+    {"id": 3, "start": 14.5, "end": 20.3, "text": "Amit ko deployment script likhna hai before the release on Thursday.", "language": "hi"},
+    {"id": 4, "start": 20.3, "end": 26.0, "text": "Kya hume GraphQL bhi consider karna chahiye instead of REST?", "language": "hi"},
+    {"id": 5, "start": 26.0, "end": 31.4, "text": "We will use Docker Compose for the local development environment — final decision.", "language": "en"}
+  ],
+  "expected_items": [
+    {"type": "decision", "text": "Use PostgreSQL for the database"},
+    {"type": "decision", "text": "Use Docker Compose for the local development environment"},
+    {"type": "action",   "text": "Priya will handle the backend API integration", "owner": "Priya", "deadline": "Wednesday"},
+    {"type": "action",   "text": "Amit will write the deployment script", "owner": "Amit", "deadline": "Thursday"},
+    {"type": "question", "text": "Should we consider GraphQL instead of REST?"}
+  ],
+  "meta": {
+    "description": "Hindi-English code-switched (Hinglish) product planning meeting",
+    "expected_wer_range": [0.0, 0.25],
+    "language": "hinglish"
+  }
+}

@@ -1,0 +1,60 @@
+# Production docker-compose — runs the full stack: backend + LiveKit + Ollama.
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# First-time Ollama model pull (run once after the stack is up):
+#   docker exec -it ollama ollama pull llama3.1:8b
+
+services:
+
+  # ── FastAPI backend ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./meetings:/app/meetings
+    depends_on:
+      livekit:
+        condition: service_started
+      ollama:
+        condition: service_healthy
+
+  # ── LiveKit server (WebRTC room) ────────────────────────────────────────────
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    ports:
+      - "7880:7880"               # HTTP / WebSocket
+      - "7881:7881"               # TCP RTC
+      - "50100-50200:50100-50200/udp"  # UDP media
+    volumes:
+      - ./livekit.yaml:/livekit.yaml
+    command: --config /livekit.yaml
+
+  # ── Ollama LLM server ───────────────────────────────────────────────────────
+  # After the first `docker compose up -d`, pull your chosen model:
+  #   docker exec -it ollama ollama pull llama3.1:8b
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# ── Named volumes ──────────────────────────────────────────────────────────────
+volumes:
+  ollama_data:

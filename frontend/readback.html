@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Review &amp; Confirm — Meeting Intelligence</title>
+<meta name="description" content="Review AI-extracted decisions and action items, verify evidence, and confirm what becomes official."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --canvas-sage:   #a9b8aa;
+    --shell-white:   #ffffff;
+    --dock-dark:     #18191b;
+    --highlight-lime:#e5f97e;
+    --card-bg:       #fbfcfb;
+    --card-border:   #edf0ed;
+    --card-border-hover: #dbe2db;
+    --text-dark:     #18191b;
+    --text-secondary:#475569;
+    --text-muted:    #8b95a5;
+    --green:         #10b981;
+    --amber:         #f59e0b;
+    --red:           #ef4444;
+    --cyan:          #0284c7;
+    --font-family:   'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  html, body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: var(--canvas-sage);
+    font-family: var(--font-family);
+    color: var(--text-dark);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Animated orbs hidden for clean Dribbble light aesthetic */
+  .orbs { display: none !important; }
+
+  /* Floating Shell Container */
+  #app-container {
+    width: calc(100vw - 32px);
+    max-width: 1440px;
+    height: calc(100vh - 32px);
+    margin: 16px auto;
+    background: var(--shell-white);
+    border-radius: 28px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.12);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Header Topbar */
+  header {
+    height: 72px;
+    padding: 0 28px;
+    background: #ffffff;
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--text-dark);
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: var(--dock-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--highlight-lime);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .logo-icon:hover { transform: scale(1.05); }
+
+  .logo-icon svg {
+    width: 22px;
+    height: 22px;
+    stroke: var(--highlight-lime);
+  }
+
+  .logo-text {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text-dark);
+    letter-spacing: -0.02em;
+  }
+  .logo-text span {
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f4f7f4;
+    border: 1px solid #e2e8e2;
+    border-radius: 9999px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+
+  .phase-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+    animation: pulseDot 1.6s infinite;
+  }
+  @keyframes pulseDot {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 15px;
+    border-radius: 9999px;
+    background: #f4f7f4;
+    border: 1px solid #e2e8e2;
+    color: var(--text-dark);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+
+  .action-btn:hover {
+    background: var(--dock-dark);
+    border-color: var(--dock-dark);
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  .action-btn svg { width: 14px; height: 14px; stroke: currentColor; }
+
+  .btn-confirm-all {
+    background: var(--dock-dark);
+    border-color: var(--dock-dark);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  .btn-confirm-all:hover {
+    background: #000000;
+    border-color: #000000;
+  }
+
+  /* Page Body */
+  .page-body {
+    flex: 1;
+    background: #f8faf8;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding-bottom: 96px;
+    position: relative;
+  }
+
+  /* Hero Section */
+  .hero {
+    padding: 32px 36px 16px;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .hero h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--text-dark);
+  }
+
+  .hero h1 span {
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .hero p {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* Progress summary bar */
+  .progress-bar-wrap {
+    max-width: 1000px;
+    margin: 0 auto 24px;
+    padding: 0 36px;
+    width: 100%;
+  }
+
+  .progress-stats {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .stat-pill.total   { background: #f4f7f4; border: 1px solid #e2e8e2; color: var(--text-dark); }
+  .stat-pill.confirm { background: #eafaf1; border: 1px solid #c2eed5; color: #107e4a; }
+  .stat-pill.edit    { background: #fffbeb; border: 1px solid #fde68a; color: #b45309; }
+  .stat-pill.reject  { background: #fef2f2; border: 1px solid #fee2e2; color: #dc2626; }
+
+  .progress-track {
+    height: 8px;
+    border-radius: 9999px;
+    background: #edf0ed;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 9999px;
+    background: var(--dock-dark);
+    transition: width 0.4s ease;
+  }
+
+  /* Items Section */
+  .items-section {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 36px 40px;
+    width: 100%;
+  }
+
+  .type-group {
+    margin-bottom: 24px;
+  }
+
+  .type-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  .type-line {
+    flex: 1;
+    height: 1px;
+    background: var(--card-border);
+  }
+
+  /* Item Card */
+  .item-card {
+    background: #ffffff;
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    animation: slideUp 0.3s ease both;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .item-card:hover {
+    border-color: var(--card-border-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  }
+
+  .item-card.status-confirmed {
+    border-left: 4px solid var(--green);
+    background: #fbfdfb;
+  }
+  .item-card.status-edited {
+    border-left: 4px solid var(--amber);
+    background: #fdfdfb;
+  }
+  .item-card.status-rejected {
+    border-left: 4px solid var(--red);
+    opacity: 0.7;
+    background: #fffcfc;
+  }
+  .item-card.status-unsupported {
+    border-left: 4px solid #94a3b8;
+    opacity: 0.65;
+  }
+
+  .item-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+
+  .item-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .item-icon.decision { background: #f4f7f4; color: var(--dock-dark); }
+  .item-icon.action   { background: #eafaf1; color: #107e4a; }
+  .item-icon.question { background: #fffbeb; color: #b45309; }
+
+  .item-meta { flex: 1; }
+
+  .item-text {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.45;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+  }
+
+  .item-text-edit {
+    width: 100%;
+    background: #fbfcfb;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 10px 14px;
+    color: var(--text-dark);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    resize: vertical;
+    display: none;
+    margin-bottom: 8px;
+    outline: none;
+  }
+  .item-text-edit:focus {
+    border-color: var(--dock-dark);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(24, 25, 27, 0.08);
+  }
+
+  .item-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .badge.owner    { background: #f4f7f4; border: 1px solid #e2e8e2; color: var(--text-dark); }
+  .badge.deadline { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+  .badge.unsup    { background: #fef2f2; border: 1px solid #fee2e2; color: #dc2626; }
+
+  /* Evidence block */
+  .evidence-block {
+    background: #f8faf8;
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    font-size: 12.5px;
+  }
+
+  .evidence-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .evidence-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .evidence-item:last-child { margin-bottom: 0; }
+
+  .evidence-quote {
+    flex: 1;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+  .evidence-quote em {
+    font-style: normal;
+    color: var(--text-dark);
+    background: rgba(229, 249, 126, 0.45);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .evidence-ts {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    flex-shrink: 0;
+    padding-top: 1px;
+  }
+
+  .play-btn {
+    background: var(--dock-dark);
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .play-btn:hover {
+    background: #000000;
+    transform: scale(1.05);
+  }
+
+  /* Action buttons */
+  .item-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .action-btn-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border-radius: 9999px;
+    border: 1px solid var(--card-border);
+    background: #f4f7f4;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+  }
+
+  .btn-confirm {
+    color: #107e4a;
+  }
+  .btn-confirm:hover, .btn-confirm.active {
+    background: #10b981;
+    border-color: #10b981;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+
+  .btn-edit {
+    color: #b45309;
+  }
+  .btn-edit:hover, .btn-edit.active {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  }
+
+  .btn-reject {
+    color: #dc2626;
+  }
+  .btn-reject:hover, .btn-reject.active {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--text-muted);
+  }
+  .empty-state .icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    opacity: 0.6;
+  }
+
+  /* Sticky Finalize Footer */
+  .finalize-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 74px;
+    background: #ffffff;
+    border-top: 1px solid var(--card-border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    z-index: 50;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
+  }
+
+  .finalize-hint {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  .finalize-hint strong {
+    color: var(--text-dark);
+    font-weight: 800;
+  }
+
+  .btn-finalize {
+    background: var(--dock-dark);
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    padding: 11px 24px;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-finalize:hover:not(:disabled) {
+    background: #000000;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  }
+  .btn-finalize:disabled {
+    background: #cbd5e1;
+    color: #64748b;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+
+  /* Loading State */
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 16px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 3px solid var(--card-border);
+    border-top-color: var(--dock-dark);
+    border-right-color: var(--highlight-lime);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    right: 24px;
+    z-index: 9999;
+    background: #ffffff;
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dark);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 340px;
+    pointer-events: none;
+  }
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  audio { display: none; }
+
+  @media (max-width: 640px) {
+    .finalize-footer { flex-direction: column; height: auto; padding: 14px 20px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app-container">
+
+  <!-- Header Topbar -->
+  <header>
+    <a href="/app/index.html" class="logo" title="Back to Dashboard">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+      </div>
+      <div class="logo-text">Meeting <span>Intelligence</span></div>
+    </a>
+
+    <div class="phase-badge">
+      <div class="phase-dot"></div>
+      <span>Read-back &amp; Confirm</span>
+    </div>
+
+    <div class="header-actions">
+      <a href="/app/index.html" class="action-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="/app/room.html" class="action-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
+        <span>Room</span>
+      </a>
+      <a id="header-report-link" href="/app/report.html" class="action-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span>View Report</span>
+      </a>
+      <a href="/app/login.html" class="action-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <span>Account</span>
+      </a>
+      <button id="btn-skip-all" class="action-btn btn-confirm-all">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span>Confirm All</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Page Body -->
+  <div class="page-body">
+
+    <!-- Loading / Selection State -->
+    <div id="loading-state" class="loading">
+      <div class="spinner"></div>
+      <div>Loading meeting…</div>
+    </div>
+
+    <!-- Content Section -->
+    <div id="content" style="display:none;">
+      <div class="hero">
+        <h1>Review &amp; <span>Confirm</span></h1>
+        <p id="meeting-subtitle">Review AI-extracted items. Each claim shows the exact transcript evidence. Confirm, edit, or reject before the record is finalised.</p>
+      </div>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-stats">
+          <div class="stat-pill total">📋 <span id="stat-total">0</span> items</div>
+          <div class="stat-pill confirm">✓ <span id="stat-confirmed">0</span> confirmed</div>
+          <div class="stat-pill edit">✎ <span id="stat-edited">0</span> edited</div>
+          <div class="stat-pill reject">✕ <span id="stat-rejected">0</span> rejected</div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="items-section" id="items-section"></div>
+    </div>
+
+  </div>
+
+  <!-- Sticky Finalize Footer -->
+  <div class="finalize-footer">
+    <div class="finalize-hint">
+      <strong id="footer-reviewed">0</strong> of <strong id="footer-total">0</strong> items reviewed
+    </div>
+    <button class="btn-finalize" id="btn-finalize" disabled>
+      <span>Finalize &amp; Generate Report</span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+    </button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<audio id="audio-player"></audio>
+
+<script>
+const API = 'http://localhost:8000';
+const params = new URLSearchParams(location.search);
+const meetingId = params.get('meeting');
+
+// State
+let items = [];
+let decisions = {}; // {itemId: {status, edited_text}}
+let segments = [];
+
+const typeInfo = {
+  decision: { icon: '📌', label: 'Decisions', color: 'decision' },
+  action:   { icon: '⚡', label: 'Action Items', color: 'action' },
+  question: { icon: '❓', label: 'Open Questions', color: 'question' },
+};
+
+async function init() {
+  if (!meetingId) {
+    const ls = document.getElementById('loading-state');
+    ls.innerHTML = `
+      <div style="max-width: 600px; width: 100%; margin: 40px auto; text-align: center; padding: 32px 24px;">
+        <div style="width: 56px; height: 56px; border-radius: 18px; background: #18191b; color: #e5f97e; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <h2 style="font-size: 22px; font-weight: 800; color: #18191b; margin-bottom: 8px; letter-spacing: -0.02em;">Select a Meeting to Review</h2>
+        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 28px; line-height: 1.5;">Choose a past meeting to audit decisions, edit items, or confirm evidence.</p>
+        <div id="readback-meetings-list" style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
+          <div class="spinner" style="margin: 20px auto;"></div>
+        </div>
+        <div style="margin-top: 28px;">
+          <a href="/app/index.html" class="action-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; font-size: 13px; font-weight: 700;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <span>Back to Dashboard</span>
+          </a>
+        </div>
+      </div>
+    `;
+    const footer = document.querySelector('.finalize-footer');
+    if (footer) footer.style.display = 'none';
+
+    try {
+      const res = await fetch(`${API}/api/meetings?limit=15`);
+      const data = await res.json();
+      const list = data.meetings || [];
+      const container = document.getElementById('readback-meetings-list');
+      if (list.length === 0) {
+        container.innerHTML = '<div style="color: #8b95a5; text-align: center; font-weight: 600; padding: 20px 0;">No meetings found yet. Upload or record one first!</div>';
+      } else {
+        container.innerHTML = list.map(m => `
+          <a href="/app/readback.html?meeting=${encodeURIComponent(m.meeting_id)}" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: #ffffff; border: 1px solid #edf0ed; border-radius: 18px; text-decoration: none; color: inherit; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 2px 6px rgba(0,0,0,0.02);" onmouseover="this.style.borderColor='#18191b'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='#edf0ed'; this.style.transform='none'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.02)'">
+            <div>
+              <div style="font-weight: 800; font-size: 15px; color: #18191b; margin-bottom: 4px;">${escHtml(m.title || 'Untitled Meeting')}</div>
+              <div style="font-size: 12px; font-weight: 600; color: #8b95a5; display: flex; align-items: center; gap: 8px;">
+                <span>${new Date(m.created_at).toLocaleDateString()}</span>
+                <span>•</span>
+                <span style="background: #f4f7f4; color: #18191b; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 700;">${m.item_counts?.total || 0} items</span>
+              </div>
+            </div>
+            <span style="font-size: 12px; color: #ffffff; background: #18191b; padding: 6px 14px; border-radius: 9999px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">Review →</span>
+          </a>
+        `).join('');
+      }
+    } catch(e) {
+      document.getElementById('readback-meetings-list').innerHTML = '<div style="color: #ef4444; text-align: center; font-weight: 600;">Failed to load meetings.</div>';
+    }
+    return;
+  }
+
+  // Set report link
+  const repLink = document.getElementById('header-report-link');
+  if (repLink) repLink.href = `/app/report.html?meeting=${encodeURIComponent(meetingId)}`;
+
+  // Poll for done status then load record
+  await waitForDone();
+  const data = await loadReport();
+  if (!data) {
+    const ls = document.getElementById('loading-state');
+    ls.innerHTML = `
+      <div style="max-width: 580px; width: 100%; margin: 40px auto; text-align: center; padding: 32px 24px;">
+        <div style="width: 56px; height: 56px; border-radius: 18px; background: #18191b; color: #e5f97e; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
+        </div>
+        <h2 style="font-size: 22px; font-weight: 800; color: #18191b; margin-bottom: 8px; letter-spacing: -0.02em;">Meeting Concluded</h2>
+        <p style="color: #64748b; font-size: 13.5px; margin-bottom: 24px; line-height: 1.5;">
+          This live session (<code>${escHtml(meetingId)}</code>) has ended. No audio recording or pipeline items were stored for this instant room.
+        </p>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <a href="/app/readback.html" class="action-btn" style="background: var(--dock-dark); color: #ffffff; border-color: var(--dock-dark); padding: 9px 20px;">
+            <span>Browse Past Meetings</span>
+          </a>
+          <a href="/app/room.html" class="action-btn" style="padding: 9px 20px;">
+            <span>Start New Room</span>
+          </a>
+          <a href="/app/index.html" class="action-btn" style="padding: 9px 20px;">
+            <span>Back to Dashboard</span>
+          </a>
+        </div>
+      </div>
+    `;
+    const footer = document.querySelector('.finalize-footer');
+    if (footer) footer.style.display = 'none';
+    return;
+  }
+
+  segments = data.segments || [];
+
+  // Flatten all items
+  const allStatuses = ['confirmed','proposed','rejected','unsupported'];
+  items = [];
+  for (const st of allStatuses) {
+    if (data.items[st]) items.push(...data.items[st]);
+  }
+
+  // Initialize decisions map (preserve existing confirmed/rejected)
+  items.forEach(item => {
+    const existingStatus = item.status;
+    decisions[item.id] = {
+      status: (existingStatus === 'proposed' || existingStatus === 'unsupported') ? null : existingStatus,
+      edited_text: item.edited_text || null,
+    };
+  });
+
+  document.getElementById('meeting-subtitle').textContent =
+    `"${data.title}" — ${data.segment_count || segments.length} transcript segments • ${items.length} item(s) extracted`;
+
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('content').style.display = 'block';
+  renderItems();
+  updateStats();
+}
+
+async function waitForDone() {
+  const statusEl = document.querySelector('.loading div:last-child');
+  
+  // Quick probe: if report is already available (completed meeting), skip SSE wait
+  try {
+    const probe = await fetch(`${API}/api/meetings/${encodeURIComponent(meetingId)}/report`);
+    if (probe.ok) return;
+  } catch(e) {}
+
+  return new Promise(resolve => {
+    let resolved = false;
+    const finish = () => {
+      if (!resolved) {
+        resolved = true;
+        try { evs.close(); } catch(e) {}
+        resolve();
+      }
+    };
+
+    // Safety timeout: never hang forever
+    const timer = setTimeout(finish, 3500);
+
+    const evs = new EventSource(`${API}/api/meetings/${encodeURIComponent(meetingId)}/status`);
+    evs.onmessage = e => {
+      try {
+        const d = JSON.parse(e.data);
+        if (statusEl) statusEl.textContent = d.message || d.stage;
+        if (d.stage === 'done' || d.stage === 'error') {
+          clearTimeout(timer);
+          finish();
+        } else if (d.stage === 'unknown') {
+          setTimeout(finish, 1200);
+        }
+      } catch(err) {
+        finish();
+      }
+    };
+    evs.onerror = () => { finish(); };
+  });
+}
+
+async function loadReport() {
+  try {
+    const r = await fetch(`${API}/api/meetings/${encodeURIComponent(meetingId)}/report`);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch(e) {
+    return null;
+  }
+}
+
+function renderItems() {
+  const section = document.getElementById('items-section');
+  section.innerHTML = '';
+
+  const groups = {};
+  items.forEach(item => {
+    if (!groups[item.type]) groups[item.type] = [];
+    groups[item.type].push(item);
+  });
+
+  const order = ['decision','action','question'];
+  let hasAny = false;
+
+  for (const type of order) {
+    const group = groups[type];
+    if (!group || group.length === 0) continue;
+    hasAny = true;
+
+    const info = typeInfo[type] || { icon: '📌', label: type, color: type };
+    const groupEl = document.createElement('div');
+    groupEl.className = 'type-group';
+    groupEl.innerHTML = `
+      <div class="type-header">
+        <span>${info.icon} ${info.label} (${group.length})</span>
+        <div class="type-line"></div>
+      </div>`;
+
+    group.forEach((item, i) => {
+      groupEl.appendChild(buildCard(item, i * 80));
+    });
+
+    section.appendChild(groupEl);
+  }
+
+  const footer = document.querySelector('.finalize-footer');
+  if (!hasAny) {
+    section.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <div style="font-size: 16px; font-weight: 800; color: #18191b; margin-bottom: 6px;">No actionable claims extracted</div>
+        <div style="font-size: 13px; color: #64748b; max-width: 480px; margin: 0 auto 20px;">The AI processed this meeting transcript but found no definite decisions, action items, or open questions.</div>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <a href="/app/readback.html" class="action-btn" style="background: var(--dock-dark); color: #fff; border-color: var(--dock-dark); padding: 8px 18px;">Select Another Meeting</a>
+          <a href="/app/report.html?meeting=${encodeURIComponent(meetingId)}" class="action-btn" style="padding: 8px 18px;">View Full Report</a>
+        </div>
+      </div>`;
+    if (footer) footer.style.display = 'none';
+  } else {
+    if (footer) footer.style.display = 'flex';
+  }
+
+  document.getElementById('footer-total').textContent = items.length;
+  document.getElementById('stat-total').textContent = items.length;
+}
+
+function buildCard(item, delay) {
+  const card = document.createElement('div');
+  const currentStatus = decisions[item.id]?.status || item.status;
+  card.className = `item-card ${currentStatus ? 'status-' + currentStatus : ''}`;
+  card.id = `card-${item.id}`;
+  card.style.animationDelay = delay + 'ms';
+
+  const info = typeInfo[item.type] || { icon: '📌', color: 'decision' };
+  const isUnsupported = item.status === 'unsupported';
+
+  // Evidence HTML
+  let evidenceHtml = '';
+  if (item.evidence && item.evidence.length > 0) {
+    const rows = item.evidence.map((ev, i) => {
+      const ts = typeof ev.timestamp === 'number' ? `${ev.timestamp.toFixed(1)}s` : '';
+      const playBtn = ev.clip_path
+        ? `<button class="play-btn" onclick="playClip('${ev.clip_path}')">▶ Play</button>`
+        : '';
+      const seg = segments.find(s => s.id === ev.segment_id);
+      const langBadge = seg ? `<span style="font-size:10px; font-weight: 800; color: #18191b; background: #edf0ed; padding: 2px 6px; border-radius: 4px;">[${seg.language?.toUpperCase()}]</span> ` : '';
+      return `<div class="evidence-item">
+        ${playBtn}
+        <div class="evidence-quote">${langBadge}<em>${escHtml(ev.quote)}</em></div>
+        <div class="evidence-ts">${ts}</div>
+      </div>`;
+    }).join('');
+    evidenceHtml = `<div class="evidence-block">
+      <div class="evidence-label">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <span>Evidence Citations</span>
+      </div>
+      ${rows}
+    </div>`;
+  }
+
+  // Badges
+  const ownerBadge   = item.owner    ? `<span class="badge owner">👤 ${escHtml(item.owner)}</span>` : '';
+  const deadlineBadge = item.deadline ? `<span class="badge deadline">📅 ${escHtml(item.deadline)}</span>` : '';
+  const unsupBadge   = isUnsupported ? `<span class="badge unsup">⚠️ Unsupported</span>` : '';
+
+  card.innerHTML = `
+    <div class="item-header">
+      <div class="item-icon ${info.color}">${info.icon || '📌'}</div>
+      <div class="item-meta">
+        <div class="item-text" id="text-${item.id}">${escHtml(item.text)}</div>
+        <textarea class="item-text-edit" id="edit-${item.id}" rows="2">${escHtml(item.text)}</textarea>
+        <div class="item-badges">${ownerBadge}${deadlineBadge}${unsupBadge}</div>
+      </div>
+    </div>
+    ${evidenceHtml}
+    <div class="item-actions">
+      <button class="action-btn-pill btn-confirm" onclick="setDecision('${item.id}','confirmed',this)">✓ Confirm</button>
+      <button class="action-btn-pill btn-edit"    onclick="startEdit('${item.id}',this)">✎ Edit</button>
+      <button class="action-btn-pill btn-reject"  onclick="setDecision('${item.id}','rejected',this)">✕ Reject</button>
+    </div>`;
+
+  // Restore active state
+  const dec = decisions[item.id];
+  if (dec && dec.status) {
+    const btnMap = { confirmed: 'btn-confirm', edited: 'btn-edit', rejected: 'btn-reject' };
+    const cls = btnMap[dec.status];
+    if (cls) card.querySelector('.' + cls)?.classList.add('active');
+  }
+
+  return card;
+}
+
+function setDecision(itemId, status, btn) {
+  decisions[itemId] = { ...decisions[itemId], status };
+
+  // End edit mode if confirming/rejecting
+  const editArea = document.getElementById('edit-' + itemId);
+  const textEl   = document.getElementById('text-' + itemId);
+  if (status !== 'edited') {
+    editArea.style.display = 'none';
+    textEl.style.display = '';
+  }
+
+  // Update card class
+  const card = document.getElementById('card-' + itemId);
+  card.className = `item-card status-${status}`;
+
+  // Update active buttons
+  card.querySelectorAll('.action-btn-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  updateStats();
+}
+
+function startEdit(itemId, btn) {
+  const editArea = document.getElementById('edit-' + itemId);
+  const textEl   = document.getElementById('text-' + itemId);
+
+  if (editArea.style.display === 'block') {
+    // Save edit
+    const newText = editArea.value.trim();
+    if (newText) {
+      textEl.textContent = newText;
+      decisions[itemId] = { status: 'edited', edited_text: newText };
+    }
+    editArea.style.display = 'none';
+    textEl.style.display = '';
+    setDecision(itemId, 'edited', btn);
+  } else {
+    editArea.style.display = 'block';
+    textEl.style.display = 'none';
+    editArea.focus();
+    btn.textContent = '💾 Save Edit';
+    btn.classList.add('active');
+    // Update card class to edited
+    document.getElementById('card-' + itemId).className = 'item-card status-edited';
+  }
+}
+
+function updateStats() {
+  const statuses = Object.values(decisions).map(d => d?.status);
+  const confirmed = statuses.filter(s => s === 'confirmed').length;
+  const edited    = statuses.filter(s => s === 'edited').length;
+  const rejected  = statuses.filter(s => s === 'rejected').length;
+  const reviewed  = statuses.filter(s => s !== null).length;
+
+  document.getElementById('stat-confirmed').textContent = confirmed;
+  document.getElementById('stat-edited').textContent    = edited;
+  document.getElementById('stat-rejected').textContent  = rejected;
+  document.getElementById('footer-reviewed').textContent = reviewed;
+
+  const pct = items.length ? (reviewed / items.length) * 100 : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  const btn = document.getElementById('btn-finalize');
+  btn.disabled = reviewed < items.length && items.length > 0;
+  if (reviewed > 0 && reviewed < items.length) {
+    btn.innerHTML = `<span>Finalize (${reviewed}/${items.length} reviewed)</span> <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 5"></polyline></svg>`;
+  } else if (reviewed === items.length) {
+    btn.innerHTML = `<span>Finalize &amp; Generate Report</span> <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 5"></polyline></svg>`;
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('btn-skip-all').addEventListener('click', () => {
+  items.forEach(item => {
+    decisions[item.id] = { status: 'confirmed', edited_text: null };
+  });
+  renderItems();
+  updateStats();
+  showToast('All items confirmed ✓');
+});
+
+document.getElementById('btn-finalize').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-finalize');
+  btn.disabled = true;
+  btn.innerHTML = '<span>Saving &amp; Synthesizing…</span>';
+
+  const payload = {
+    decisions: Object.entries(decisions).map(([id, dec]) => ({
+      id,
+      status: dec?.status || 'proposed',
+      edited_text: dec?.edited_text || undefined,
+    })).filter(d => d.status),
+  };
+
+  try {
+    const r = await fetch(`${API}/api/meetings/${encodeURIComponent(meetingId)}/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const result = await r.json();
+    showToast(`✓ ${result.confirmed} item(s) confirmed!`);
+    setTimeout(() => {
+      location.href = `/app/report.html?meeting=${encodeURIComponent(meetingId)}`;
+    }, 800);
+  } catch(e) {
+    showToast('Error saving: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = `<span>Finalize &amp; Generate Report</span> <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 5"></polyline></svg>`;
+  }
+});
+
+function playClip(path) {
+  const player = document.getElementById('audio-player');
+  player.src = API + path;
+  player.play();
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = type === 'error' ? 'var(--red)' : 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>

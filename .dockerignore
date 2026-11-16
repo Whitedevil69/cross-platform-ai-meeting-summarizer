@@ -1,0 +1,53 @@
+# Version control
+.git
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.xml
+
+# Local env files
+.env
+*.env.local
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.DS_Store
+Thumbs.db
+
+# Data & model caches (large — should not be baked into the image)
+meetings/
+*.wav
+*.mp3
+*.mp4
+*.webm
+models/
+*.bin
+*.pt
+*.gguf
+
+# Docker files (no need to copy themselves in)
+Dockerfile
+docker-compose*.yml

@@ -1,0 +1,21 @@
+{
+  "transcript": [
+    {"id": 0, "start": 0.0,  "end": 3.8,  "text": "We decided to use React for the frontend framework.", "language": "en"},
+    {"id": 1, "start": 3.8,  "end": 8.2,  "text": "Rahul will submit the quarterly report by this Friday.", "language": "en"},
+    {"id": 2, "start": 8.2,  "end": 13.5, "text": "We have agreed to freeze the API contract before any UI work begins.", "language": "en"},
+    {"id": 3, "start": 13.5, "end": 18.0, "text": "Sarah will set up the CI/CD pipeline on GitHub Actions by next Monday.", "language": "en"},
+    {"id": 4, "start": 18.0, "end": 23.1, "text": "Has anyone looked into whether we need a Redis layer for session caching?", "language": "en"}
+  ],
+  "expected_items": [
+    {"type": "decision", "text": "Use React for the frontend framework"},
+    {"type": "decision", "text": "Freeze the API contract before UI work begins"},
+    {"type": "action",   "text": "Rahul will submit the quarterly report", "owner": "Rahul",  "deadline": "Friday"},
+    {"type": "action",   "text": "Sarah will set up the CI/CD pipeline on GitHub Actions", "owner": "Sarah", "deadline": "next Monday"},
+    {"type": "question", "text": "Do we need a Redis layer for session caching?"}
+  ],
+  "meta": {
+    "description": "Pure English engineering sprint-planning meeting",
+    "expected_wer_range": [0.0, 0.15],
+    "language": "en"
+  }
+}

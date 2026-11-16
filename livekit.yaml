@@ -1,0 +1,17 @@
+port: 7880
+bind_addresses:
+  - ""   # listen on all interfaces
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50200
+  use_external_ip: false   # set true if exposing beyond localhost
+
+# Development keys — change in production!
+keys:
+  devkey: devsecret_at_least_32_chars_long!
+
+logging:
+  json: false
+  level: info
