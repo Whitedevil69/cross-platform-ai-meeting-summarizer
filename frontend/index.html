@@ -3187,7 +3187,7 @@
             <span style="font-size:13px;">🏢</span> Organization
           </button>
           <button type="button" class="ref-tab-pill" id="navTab-workspaces" onclick="switchMainTab('workspaces')" title="Switch Workspace">
-            <span>Workspaces</span> <span style="font-size:10px;opacity:0.7;">▾</span>
+            <span id="activeWorkspaceLabel">Workspaces</span> <span style="font-size:10px;opacity:0.7;">▾</span>
           </button>
         </div>
 
@@ -4511,10 +4511,10 @@ Evidence verification links and audio citations are archived in Syncra Workplace
                 <div>
                   <div class="ref-card-header">
                     <span class="ref-card-tag"><span style="display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#e5f97e;color:#18191b;font-size:11px;">🗂️</span> Workspaces</span>
-                    <button type="button" class="ref-card-menu-btn">⋮</button>
+                    <button type="button" class="ref-card-menu-btn" onclick="switchMainTab('workspaces')">⋮</button>
                   </div>
-                  <div class="ref-metric-val">4 <span class="ref-pill-percent">Isolated</span></div>
-                  <div class="ref-metric-sub">Engineering, Product, Sales, Exec</div>
+                  <div class="ref-metric-val" id="wsMetricTotalCount">4 <span class="ref-pill-percent">Isolated</span></div>
+                  <div class="ref-metric-sub" id="wsMetricActiveName">Active: Engineering &amp; Core Platform</div>
                 </div>
                 <div class="ref-capsules-row">
                   <div class="ref-capsule-item solid-dark"></div><div class="ref-capsule-item solid-dark"></div><div class="ref-capsule-item solid-dark"></div><div class="ref-capsule-item solid-dark"></div><div class="ref-capsule-item solid-dark"></div><div class="ref-capsule-item dashed-light"></div><div class="ref-capsule-item dashed-light"></div><div class="ref-capsule-item dashed-light"></div>
@@ -4526,7 +4526,7 @@ Evidence verification links and audio citations are archived in Syncra Workplace
                     <span class="ref-card-tag"><span style="display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#18191b;color:#e5f97e;font-size:11px;">🔒</span> Storage Quota</span>
                     <button type="button" class="ref-card-menu-btn">⋮</button>
                   </div>
-                  <div class="ref-metric-val" style="color:#18191b;">12.4 GB <span class="ref-pill-percent">Encrypted</span></div>
+                  <div class="ref-metric-val" style="color:#18191b;" id="wsMetricStorageTotal">102.3 MB <span class="ref-pill-percent">Encrypted</span></div>
                   <div class="ref-metric-sub" style="color:rgba(24,25,27,0.6);">AES-256 Storage Isolation Vault</div>
                 </div>
                 <div class="ref-capsules-row">
@@ -4539,31 +4539,23 @@ Evidence verification links and audio citations are archived in Syncra Workplace
                   <div class="ref-dark-hero-sub">Isolate meeting intelligence &amp; access</div>
                   <div class="ref-dark-hero-avatar">🗂️</div>
                 </div>
-                <button type="button" onclick="showToast('Workspace creation wizard opened!','info')" class="ref-btn-upgrade" style="cursor:pointer;border:none;">
+                <button type="button" onclick="openCreateWorkspaceModal()" class="ref-btn-upgrade" style="cursor:pointer;border:none;">
                   <span>New Workspace ▷</span>
                 </button>
               </div>
             </div>
 
             <div class="doc-card" style="margin-top:20px;">
-              <div style="font-weight:800;font-size:1.15rem;color:var(--text-dark);margin-bottom:14px;">Active Workspaces</div>
-              <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;">
-                <div class="ref-card-metric" style="min-height:auto;padding:18px;border-color:var(--dock-dark);">
-                  <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div style="font-weight:800;font-size:1rem;color:var(--text-dark);">Engineering &amp; Core Platform</div>
-                    <span class="app-badge-status app-badge-green">● Active</span>
-                  </div>
-                  <div style="font-size:0.75rem;color:#64748b;margin:6px 0 12px;">12 Members • 48 Indexed Meetings • Faster-Whisper GPU cluster</div>
-                  <button type="button" class="app-btn-primary" style="padding:5px 12px;font-size:0.72rem;">Current Workspace</button>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+                <div>
+                  <div style="font-weight:800;font-size:1.15rem;color:var(--text-dark);">Active Workspaces (SQLite Multi-Tenant)</div>
+                  <div style="font-size:0.75rem;color:#64748b;margin-top:2px;">Switching workspace isolates your meetings, decisions, and audio evidence in the database.</div>
                 </div>
-                <div class="ref-card-metric" style="min-height:auto;padding:18px;">
-                  <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div style="font-weight:800;font-size:1rem;color:var(--text-dark);">Product &amp; Design Strategy</div>
-                    <span class="app-badge-status app-badge-purple">Isolated</span>
-                  </div>
-                  <div style="font-size:0.75rem;color:#64748b;margin:6px 0 12px;">6 Members • 18 Indexed Meetings • Bilingual Hindi-English models</div>
-                  <button type="button" class="app-btn-secondary" onclick="showToast('Switched to Product &amp; Design!','success')" style="padding:5px 12px;font-size:0.72rem;">Switch Workspace</button>
-                </div>
+                <button type="button" onclick="openCreateWorkspaceModal()" class="app-btn-primary" style="padding:6px 14px;font-size:0.75rem;">+ Add Workspace</button>
+              </div>
+              <div id="workspacesListGrid" style="display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;">
+                <!-- Populated dynamically via /api/workspaces -->
+                <div style="grid-column:1/-1;text-align:center;padding:20px;color:#8b95a5;">Loading department workspaces…</div>
               </div>
             </div>
           </div>
@@ -7094,9 +7086,10 @@ ${escapeHtml(data.answer)}`;
         if (rmEmpty) rmEmpty.style.display = 'none';
 
         try {
+          const wsParam = (window.currentWorkspaceId && window.currentWorkspaceId !== 'all') ? `&workspace_id=${encodeURIComponent(window.currentWorkspaceId)}` : '';
           const url = q 
-            ? `${API_BASE}/api/meetings?search=${encodeURIComponent(q)}&limit=10`
-            : `${API_BASE}/api/meetings?limit=10`;
+            ? `${API_BASE}/api/meetings?search=${encodeURIComponent(q)}&limit=10${wsParam}`
+            : `${API_BASE}/api/meetings?limit=10${wsParam}`;
           const res = await fetch(url);
           const data = await res.json();
           const list = data.meetings || [];
@@ -7267,6 +7260,7 @@ ${escapeHtml(data.answer)}`;
       if (tabKey === 'chat') loadChatView();
       if (tabKey === 'whiteboards') loadWhiteboardsView();
       if (tabKey === 'clips') loadClipsView();
+      if (tabKey === 'workspaces') window.loadWorkspacesView();
     };
 
     // Forward openMoreApp and openAppSuiteModal directly to switchMainTab!
@@ -7527,6 +7521,190 @@ ${escapeHtml(data.answer)}`;
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
       document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // REAL MULTI-TENANT WORKSPACE ENGINE (SQLite Backed)
+    // ══════════════════════════════════════════════════════════════════════
+    window.currentWorkspaceId = localStorage.getItem('active_workspace_id') || 'ws-engineering';
+    window.workspacesData = [];
+
+    window.loadWorkspacesView = async function() {
+      try {
+        const res = await fetch(`${API_BASE}/api/workspaces`);
+        if (!res.ok) return;
+        const data = await res.json();
+        window.workspacesData = data.workspaces || [];
+
+        // Update metric counters
+        const totalCountEl = document.getElementById('wsMetricTotalCount');
+        if (totalCountEl) totalCountEl.innerHTML = `${window.workspacesData.length} <span class="ref-pill-percent">Isolated</span>`;
+
+        let activeWs = window.workspacesData.find(w => w.workspace_id === window.currentWorkspaceId);
+        if (!activeWs && window.workspacesData.length > 0) {
+          activeWs = window.workspacesData[0];
+          window.currentWorkspaceId = activeWs.workspace_id;
+          localStorage.setItem('active_workspace_id', window.currentWorkspaceId);
+        }
+
+        if (activeWs) {
+          const activeNameEl = document.getElementById('wsMetricActiveName');
+          if (activeNameEl) activeNameEl.textContent = `Active: ${activeWs.name}`;
+          const labelEl = document.getElementById('activeWorkspaceLabel');
+          if (labelEl) labelEl.textContent = `${activeWs.icon || '💼'} ${activeWs.name.split(' ')[0]}`;
+        }
+
+        // Sum storage
+        const totalStorageMb = window.workspacesData.reduce((acc, w) => acc + (w.storage_mb || 0), 0);
+        const storageTotalEl = document.getElementById('wsMetricStorageTotal');
+        if (storageTotalEl) storageTotalEl.innerHTML = `${totalStorageMb.toFixed(1)} MB <span class="ref-pill-percent">Encrypted</span>`;
+
+        // Render Cards
+        const grid = document.getElementById('workspacesListGrid');
+        if (grid) {
+          if (window.workspacesData.length === 0) {
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:#8b95a5;">No workspaces found. Click "+ Add Workspace" above!</div>';
+            return;
+          }
+          grid.innerHTML = window.workspacesData.map(ws => {
+            const isActive = ws.workspace_id === window.currentWorkspaceId;
+            return `
+              <div class="ref-card-metric" style="min-height:auto;padding:20px;${isActive ? 'border-color:var(--dock-dark);box-shadow:0 6px 20px rgba(0,0,0,0.06);' : ''}">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <div style="font-weight:800;font-size:1rem;color:var(--text-dark);display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:18px;">${escHtml(ws.icon || '💼')}</span>
+                    <span>${escHtml(ws.name)}</span>
+                  </div>
+                  ${isActive 
+                    ? '<span class="app-badge-status app-badge-green">● Active</span>' 
+                    : `<span class="app-badge-status" style="background:#f1f5f9;color:#64748b;">${escHtml(ws.department || 'Isolated')}</span>`}
+                </div>
+                <div style="font-size:0.75rem;color:#64748b;margin:4px 0 14px;line-height:1.4;">
+                  ${escHtml(ws.description || 'Isolated workspace partition with private database records.')}
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;border-top:1px solid #edf0ed;padding-top:10px;">
+                  <div style="font-size:0.72rem;color:#8b95a5;font-weight:600;">
+                    <span>${ws.meeting_count || 0} meeting(s)</span> • <span>${ws.storage_mb || 0} MB</span>
+                  </div>
+                  ${isActive 
+                    ? '<button type="button" class="app-btn-primary" style="padding:5px 14px;font-size:0.75rem;cursor:default;">Current</button>' 
+                    : `<button type="button" class="app-btn-secondary" onclick="switchActiveWorkspace('${ws.workspace_id}')" style="padding:5px 14px;font-size:0.75rem;">Switch Workspace</button>`}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error("Failed to load workspaces view:", err);
+      }
+    };
+
+    window.switchActiveWorkspace = function(wsId) {
+      window.currentWorkspaceId = wsId;
+      localStorage.setItem('active_workspace_id', wsId);
+      const target = window.workspacesData.find(w => w.workspace_id === wsId);
+      const name = target ? target.name : wsId;
+      showToast(`Switched to ${name}!`, 'success');
+      window.loadWorkspacesView();
+      if (typeof loadRecentMeetings === 'function') {
+        loadRecentMeetings();
+      }
+    };
+
+    window.openCreateWorkspaceModal = function() {
+      const m = document.getElementById('modalCreateWorkspaceOverlay');
+      if (m) {
+        m.style.display = 'flex';
+        document.getElementById('newWsName')?.focus();
+      }
+    };
+
+    window.closeCreateWorkspaceModal = function() {
+      const m = document.getElementById('modalCreateWorkspaceOverlay');
+      if (m) m.style.display = 'none';
+    };
+
+    window.handleCreateWorkspaceSubmit = async function(e) {
+      e.preventDefault();
+      const name = document.getElementById('newWsName').value.trim();
+      const department = document.getElementById('newWsDepartment').value;
+      const icon = document.getElementById('newWsIcon').value.trim() || '💼';
+      const description = document.getElementById('newWsDescription').value.trim();
+
+      if (!name) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/workspaces`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, department, icon, description })
+        });
+        if (!res.ok) throw new Error("Could not create workspace");
+        const result = await res.json();
+        closeCreateWorkspaceModal();
+        showToast(`Workspace "${name}" provisioned in SQLite!`, 'success');
+        window.currentWorkspaceId = result.workspace.workspace_id;
+        localStorage.setItem('active_workspace_id', window.currentWorkspaceId);
+        await window.loadWorkspacesView();
+        if (typeof loadRecentMeetings === 'function') loadRecentMeetings();
+      } catch(err) {
+        showToast(err.message, 'error');
+      }
+    };
+
+    // Auto-load workspaces on initial page load
+    setTimeout(() => {
+      if (typeof window.loadWorkspacesView === 'function') {
+        window.loadWorkspacesView();
+      }
+    }, 150);
+
   </script>
+
+<!-- Modal: Create New Workspace -->
+<div id="modalCreateWorkspaceOverlay" class="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(24,25,27,0.45);backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#ffffff;border-radius:24px;border:1px solid #edf0ed;box-shadow:0 25px 60px rgba(0,0,0,0.18);width:100%;max-width:480px;padding:28px;position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:24px;" id="newWsIconPreview">💼</span>
+        <h3 style="font-size:1.25rem;font-weight:800;color:var(--text-dark);margin:0;">New Workspace</h3>
+      </div>
+      <button type="button" onclick="closeCreateWorkspaceModal()" style="background:none;border:none;font-size:1.5rem;color:#8b95a5;cursor:pointer;">×</button>
+    </div>
+    <form id="formCreateWorkspace" onsubmit="handleCreateWorkspaceSubmit(event)">
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-dark);margin-bottom:6px;">Workspace Name *</label>
+        <input type="text" id="newWsName" required placeholder="e.g. Mobile iOS & Android Team" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #cbd5e1;font-size:0.9rem;outline:none;font-family:inherit;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div>
+          <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-dark);margin-bottom:6px;">Department</label>
+          <select id="newWsDepartment" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #cbd5e1;font-size:0.85rem;background:#fff;font-family:inherit;">
+            <option value="Engineering">Engineering</option>
+            <option value="Product">Product</option>
+            <option value="Design">Design</option>
+            <option value="Sales">Sales</option>
+            <option value="Executive">Executive</option>
+            <option value="Operations">Operations</option>
+            <option value="Support">Support</option>
+            <option value="General">General</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-dark);margin-bottom:6px;">Icon / Emoji</label>
+          <input type="text" id="newWsIcon" value="💼" maxlength="2" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #cbd5e1;font-size:0.9rem;outline:none;text-align:center;font-family:inherit;" oninput="document.getElementById('newWsIconPreview').textContent = this.value || '💼'">
+        </div>
+      </div>
+      <div style="margin-bottom:18px;">
+        <label style="display:block;font-size:0.8rem;font-weight:700;color:var(--text-dark);margin-bottom:6px;">Description (Optional)</label>
+        <textarea id="newWsDescription" rows="2" placeholder="Explain the focus of this department workspace..." style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid #cbd5e1;font-size:0.85rem;outline:none;font-family:inherit;resize:none;"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button type="button" onclick="closeCreateWorkspaceModal()" class="app-btn-secondary" style="padding:8px 18px;font-size:0.85rem;">Cancel</button>
+        <button type="submit" class="app-btn-primary" style="padding:8px 20px;font-size:0.85rem;">Create Workspace</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 </body>
 </html>

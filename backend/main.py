@@ -91,7 +91,7 @@ def _set_status(meeting_id: str, stage: str, progress: int, message: str = ""):
 
 # ── Pipeline helpers ──────────────────────────────────────────────────────────
 
-async def _run_pipeline(meeting_id: str, audio_path: Path, title: str | None):
+async def _run_pipeline(meeting_id: str, audio_path: Path, title: str | None, owner_id: str = "dev-user", workspace_id: str = "ws-engineering"):
     """
     Full offline pipeline (run in background thread):
     ASR → translation → extraction → evidence check → save.
@@ -162,7 +162,7 @@ async def _run_pipeline(meeting_id: str, audio_path: Path, title: str | None):
             items=items,
         )
         _set_status(meeting_id, "saving", 95, "Saving meeting record…")
-        save_meeting_record(meeting_id, record.model_dump_json(indent=2))
+        save_meeting_record(meeting_id, record.model_dump_json(indent=2), owner_id=owner_id, workspace_id=workspace_id)
         _set_status(meeting_id, "done", 100, "Pipeline complete")
         logger.info("Pipeline complete for meeting %s — %d items", meeting_id, len(items))
 
@@ -227,8 +227,9 @@ async def upload_meeting(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     title: str | None = Form(None),
+    workspace_id: str | None = Form(None),
 ):
-    """Upload an audio/video file and start the AI pipeline."""
+    """Upload an audio/video file and start the AI pipeline with workspace isolation."""
     from .auth import get_current_user_id
     owner_id = get_current_user_id(request.headers.get("Authorization"))
     meeting_id = str(uuid.uuid4())
@@ -239,7 +240,14 @@ async def upload_meeting(
     audio_path = save_audio(meeting_id, audio_bytes, ext)
     _set_status(meeting_id, "queued", 5, "File received, pipeline starting…")
 
-    background_tasks.add_task(_run_pipeline, meeting_id, audio_path, title, owner_id)
+    background_tasks.add_task(
+        _run_pipeline,
+        meeting_id,
+        audio_path,
+        title,
+        owner_id,
+        workspace_id or "ws-engineering",
+    )
 
     return {
         "meeting_id": meeting_id,
@@ -547,16 +555,69 @@ async def _finalize_live_meeting(meeting_id: str, segments: list):
     _set_status(meeting_id, "done", 100, "Ready for read-back")
 
 
+class CreateWorkspaceRequest(BaseModel):
+    name: str
+    description: str = ""
+    icon: str = "💼"
+    department: str = "General"
+    members_count: int = 1
+
+
+@app.get("/api/workspaces", tags=["workspaces"])
+async def list_workspaces_endpoint():
+    """List all department workspaces with real meeting, decision, and storage metrics."""
+    from .database import get_db
+    workspaces = get_db().list_workspaces()
+    return {"workspaces": workspaces, "count": len(workspaces)}
+
+
+@app.post("/api/workspaces", tags=["workspaces"])
+async def create_workspace_endpoint(req: CreateWorkspaceRequest):
+    """Create a new department workspace with isolated meeting storage."""
+    from .database import get_db
+    if not req.name.strip():
+        raise HTTPException(400, "Workspace name cannot be empty")
+    ws = get_db().create_workspace(
+        name=req.name,
+        description=req.description,
+        icon=req.icon or "💼",
+        department=req.department or "General",
+        members_count=req.members_count or 1,
+    )
+    return {"status": "ok", "workspace": ws}
+
+
+@app.get("/api/workspaces/{workspace_id}", tags=["workspaces"])
+async def get_workspace_endpoint(workspace_id: str):
+    """Get single workspace details and metrics."""
+    from .database import get_db
+    ws = get_db().get_workspace(workspace_id)
+    if not ws:
+        raise HTTPException(404, "Workspace not found")
+    return {"workspace": ws}
+
+
 @app.get("/api/meetings", tags=["meetings"])
-async def list_meetings(limit: int = 20, offset: int = 0, search: str | None = None):
-    """List all meetings with pagination and optional search."""
+async def list_meetings(
+    limit: int = 20,
+    offset: int = 0,
+    search: str | None = None,
+    workspace_id: str | None = None,
+):
+    """List all meetings with pagination, optional search, and workspace isolation."""
     from .database import get_db
     db = get_db()
     if search:
-        meetings = db.search_meetings(search)
+        meetings = db.search_meetings(search, workspace_id=workspace_id)
     else:
-        meetings = db.list_meetings(limit=limit, offset=offset)
-    return {"meetings": meetings, "limit": limit, "offset": offset, "count": len(meetings)}
+        meetings = db.list_meetings(workspace_id=workspace_id, limit=limit, offset=offset)
+    return {
+        "meetings": meetings,
+        "limit": limit,
+        "offset": offset,
+        "count": len(meetings),
+        "workspace_id": workspace_id or "all",
+    }
 
 
 @app.delete("/api/meetings/{meeting_id}", tags=["meetings"])

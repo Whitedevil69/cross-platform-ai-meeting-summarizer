@@ -64,10 +64,10 @@ def extract_clip(
     return str(out_path.relative_to(MEETINGS_DIR))
 
 
-def save_meeting_record(meeting_id: str, record_json: str, owner_id: str = "dev-user") -> None:
+def save_meeting_record(meeting_id: str, record_json: str, owner_id: str = "dev-user", workspace_id: str = "ws-engineering") -> None:
     """Save meeting record to SQLite DB + keep .json backup."""
     from .database import get_db
-    get_db().save_meeting(meeting_id, record_json, owner_id)
+    get_db().save_meeting(meeting_id, record_json, owner_id, workspace_id)
     # backup json file
     backup = meeting_dir(meeting_id) / "record.json"
     backup.write_text(record_json, encoding="utf-8")
