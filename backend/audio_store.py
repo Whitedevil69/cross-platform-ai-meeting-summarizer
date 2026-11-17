@@ -5,6 +5,7 @@ Clips are saved as .wav and served via /audio/{meeting_id}/{segment_id}.wav
 from __future__ import annotations
 
 import json
+import logging
 import os
 import wave
 from pathlib import Path
@@ -12,6 +13,7 @@ from pathlib import Path
 import soundfile as sf
 import numpy as np
 
+logger = logging.getLogger(__name__)
 
 MEETINGS_DIR = Path(os.getenv("MEETINGS_DIR", "meetings"))
 
@@ -29,10 +31,42 @@ def clips_dir(meeting_id: str) -> Path:
 
 
 def save_audio(meeting_id: str, audio_bytes: bytes, ext: str = ".wav") -> Path:
-    """Save the original uploaded/recorded audio and return its path."""
+    """Save the uploaded/recorded audio, auto-converting to 16kHz mono WAV via PyAV if needed."""
     dest = meeting_dir(meeting_id) / f"audio{ext}"
     dest.write_bytes(audio_bytes)
-    return dest
+
+    # If the file is already a WAV file, return as-is
+    if ext.lower() == ".wav":
+        return dest
+
+    # Otherwise convert to 16kHz mono WAV using PyAV so soundfile & diarization work seamlessly
+    wav_path = meeting_dir(meeting_id) / "audio.wav"
+    try:
+        import av
+        container = av.open(str(dest))
+        audio_stream = next((s for s in container.streams if s.type == "audio"), None)
+        if not audio_stream:
+            logger.warning("No audio stream found in %s, returning original", dest)
+            return dest
+
+        resampler = av.AudioResampler(format="s16", layout="mono", rate=16000)
+        out_container = av.open(str(wav_path), mode="w", format="wav")
+        out_stream = out_container.add_stream("pcm_s16le", rate=16000)
+
+        for frame in container.decode(audio_stream):
+            for resampled_frame in resampler.resample(frame):
+                for packet in out_stream.encode(resampled_frame):
+                    out_container.mux(packet)
+        for packet in out_stream.encode(None):
+            out_container.mux(packet)
+
+        out_container.close()
+        container.close()
+        logger.info("Auto-converted %s (%s) -> %s for full audio compatibility", ext, len(audio_bytes), wav_path)
+        return wav_path
+    except Exception as e:
+        logger.warning("Audio conversion via av failed (%s), falling back to original: %s", e, dest)
+        return dest
 
 
 def extract_clip(

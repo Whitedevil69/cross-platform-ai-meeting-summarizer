@@ -2950,6 +2950,97 @@
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
+    .ref-btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 9999px;
+      background: #ffffff;
+      color: var(--text-dark);
+      border: 1.5px solid #e2e8e2;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.18s ease;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .ref-btn-secondary:hover {
+      background: #f4f6f4;
+      border-color: #cbd5e1;
+    }
+    /* Live Capture HUD */
+    .live-capture-hud {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #fbfdfa;
+      border: 1.5px solid #d4ee60;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 4px 14px rgba(132, 204, 22, 0.08);
+      animation: fadeIn 0.25s ease;
+    }
+    .live-capture-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .live-rec-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #b91c1c;
+      background: #fef2f2;
+      border: 1px solid #fee2e2;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      letter-spacing: 0.02em;
+    }
+    .rec-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #dc2626;
+      animation: recPulse 1s infinite alternate;
+    }
+    @keyframes recPulse {
+      from { opacity: 0.3; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1.2); }
+    }
+    .live-capture-timer {
+      font-family: var(--font-mono, monospace);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #18191b;
+      letter-spacing: 0.04em;
+    }
+    .live-waveform-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 44px;
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #e5e8e5;
+      padding: 0 16px;
+    }
+    .live-wave-bar {
+      width: 5px;
+      border-radius: 3px;
+      background: #18191b;
+      min-height: 4px;
+      transition: height 0.08s ease;
+    }
+    .live-wave-bar:nth-child(even) {
+      background: #84cc16;
+    }
     .ref-dropzone {
       background: #fbfcfb;
       border: 2px dashed #cbd5e1;
@@ -3387,40 +3478,110 @@
             <!-- ════════════════════════════════════════════════════════════════ -->
             <div class="ref-tools-grid">
               
-              <!-- Card A: Cross-Platform AI Bot Dispatcher -->
+              <!-- Card A: Cross-Platform Live Meeting Notetaker & In-Browser Audio Capture -->
               <section class="ref-tool-card" id="crossPlatformCard">
                 <div>
                   <div class="ref-tool-header">
                     <div class="ref-tool-title-group">
-                      <div class="ref-tool-icon-box">🤖</div>
+                      <div class="ref-tool-icon-box lime">🎙️</div>
                       <div>
-                        <div class="ref-tool-title">Cross-Platform AI Notetaker Bot</div>
-                        <div style="font-size:0.72rem;color:#8b95a5;">Zoom, Google Meet, &amp; Teams</div>
+                        <div class="ref-tool-title">Cross-Platform Live Meeting Notetaker</div>
+                        <div style="font-size:0.72rem;color:#8b95a5;">Google Meet, Zoom, &amp; Teams • Zero Bot Required</div>
                       </div>
                     </div>
-                    <span class="ref-tool-badge">Recall.ai Engine</span>
+                    <span class="ref-tool-badge" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0;">● Live Audio Capture</span>
                   </div>
                   <div class="ref-tool-desc" style="margin-top:10px;">
-                    Send an autonomous silent AI bot into external meetings to stream audio and index decisions live.
+                    Attend external meetings yourself on Google Meet, Zoom, or Teams — Syncra captures tab audio and your microphone live, indexing decisions with 0% external dependencies.
                   </div>
                 </div>
 
                 <div>
                   <!-- Platform Selector Pills -->
                   <div class="ref-platform-pill-row" style="margin-bottom:12px;">
-                    <button type="button" class="ref-platform-pill active" data-platform="zoom"><span>🎥</span> Zoom</button>
-                    <button type="button" class="ref-platform-pill" data-platform="google_meet"><span>📹</span> Google Meet</button>
+                    <button type="button" class="ref-platform-pill active" data-platform="google_meet"><span>📹</span> Google Meet</button>
+                    <button type="button" class="ref-platform-pill" data-platform="zoom"><span>🎥</span> Zoom</button>
                     <button type="button" class="ref-platform-pill" data-platform="teams"><span>👥</span> Teams</button>
+                    <button type="button" class="ref-platform-pill" data-platform="desktop"><span>💻</span> Any Tab / App</button>
                   </div>
 
-                  <!-- Bot Input Row -->
-                  <div class="ref-bot-input-group">
-                    <input type="text" id="externalMeetingUrl" class="ref-bot-input" placeholder="Paste meeting invite link...">
-                    <button type="button" class="ref-btn-primary" id="btnDispatchBot">
-                      <span>🚀 Dispatch Bot</span>
-                    </button>
+                  <!-- Idle Setup Panel -->
+                  <div id="liveCaptureIdlePanel">
+                    <!-- Meeting URL Row with Quick Open -->
+                    <div class="ref-bot-input-group" style="margin-bottom:10px;">
+                      <input type="text" id="externalMeetingUrl" class="ref-bot-input" placeholder="Paste Google Meet link (e.g. https://meet.google.com/abc-defg-hij)…">
+                      <button type="button" class="ref-btn-secondary" id="btnOpenMeeting" title="Open meeting link in new tab" style="display:none;padding:8px 14px;font-size:0.78rem;">
+                        <span>Open ↗</span>
+                      </button>
+                    </div>
+
+                    <!-- Capture Options & Action Button -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+                      <label style="display:flex;align-items:center;gap:6px;font-size:0.75rem;color:#475569;cursor:pointer;user-select:none;">
+                        <input type="checkbox" id="chkIncludeMic" checked style="accent-color:#18191b;">
+                        <span>Include My Microphone (Mix speech)</span>
+                      </label>
+                      <button type="button" class="ref-btn-primary" id="btnStartLiveCapture" style="background:#18191b;padding:10px 22px;">
+                        <span>🎙️ Start Live Meeting Capture</span>
+                      </button>
+                    </div>
+
+                    <!-- Autonomous Bot Toggle (Recall.ai) -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.72rem;color:#8b95a5;padding-top:8px;border-top:1px dashed #e5e8e5;">
+                      <span>Want an autonomous bot instead?</span>
+                      <a href="javascript:void(0)" id="toggleBotDispatcher" style="color:#0284c7;font-weight:600;text-decoration:none;">Switch to Bot Dispatcher →</a>
+                    </div>
+
+                    <!-- Hidden Bot Dispatcher View -->
+                    <div id="botDispatcherView" style="display:none;margin-top:10px;padding:12px;background:#f8faf8;border-radius:14px;border:1px solid #e2e8e2;">
+                      <div style="font-size:0.75rem;font-weight:700;color:#18191b;margin-bottom:6px;">Autonomous Bot Dispatcher (Recall.ai)</div>
+                      <div style="font-size:0.72rem;color:#64748b;margin-bottom:8px;">Requires <code>RECALL_API_KEY</code> in <code>.env</code>. Dispatches cloud bot to dial into meeting link.</div>
+                      <div style="display:flex;gap:8px;align-items:center;">
+                        <button type="button" class="ref-btn-primary" id="btnDispatchBot" style="font-size:0.75rem;padding:8px 16px;">
+                          <span>🚀 Dispatch Bot to Meeting Link</span>
+                        </button>
+                        <button type="button" id="btnCancelBotMode" style="border:none;background:none;font-size:0.75rem;color:#64748b;cursor:pointer;padding:6px 10px;">Back to Live Capture</button>
+                      </div>
+                      <div id="botDispatchStatus" style="display:none;margin-top:8px;font-size:0.75rem;color:#059669;font-weight:600;"></div>
+                    </div>
                   </div>
-                  <div id="botDispatchStatus" style="display:none;margin-top:8px;font-size:0.75rem;color:#059669;font-weight:600;"></div>
+
+                  <!-- Active Recording HUD (Shown when capturing) -->
+                  <div id="liveCaptureActivePanel" style="display:none;" class="live-capture-hud">
+                    <div class="live-capture-header">
+                      <div class="live-rec-badge">
+                        <span class="rec-pulse-dot"></span>
+                        <span id="liveRecPlatformLabel">CAPTURING GOOGLE MEET</span>
+                      </div>
+                      <div class="live-capture-timer" id="liveCaptureTimer">00:00</div>
+                    </div>
+
+                    <!-- Audio Equalizer Visualizer -->
+                    <div class="live-waveform-wrap" title="Live audio activity from meeting">
+                      <div class="live-wave-bar" id="wvBar0" style="height:12px;"></div>
+                      <div class="live-wave-bar" id="wvBar1" style="height:24px;"></div>
+                      <div class="live-wave-bar" id="wvBar2" style="height:18px;"></div>
+                      <div class="live-wave-bar" id="wvBar3" style="height:32px;"></div>
+                      <div class="live-wave-bar" id="wvBar4" style="height:20px;"></div>
+                      <div class="live-wave-bar" id="wvBar5" style="height:28px;"></div>
+                      <div class="live-wave-bar" id="wvBar6" style="height:14px;"></div>
+                    </div>
+
+                    <div style="font-size:0.74rem;color:#475569;display:flex;align-items:center;justify-content:space-between;">
+                      <span id="liveStreamStatusText">🎧 Streaming meeting audio + microphone…</span>
+                      <span style="color:#059669;font-weight:600;">● Signal Healthy</span>
+                    </div>
+
+                    <!-- HUD Controls -->
+                    <div style="display:flex;gap:10px;margin-top:4px;">
+                      <button type="button" class="ref-btn-primary" id="btnFinishLiveCapture" style="flex:1;background:#18191b;">
+                        <span>⏹️ Finish Meeting &amp; Generate AI Report</span>
+                      </button>
+                      <button type="button" class="ref-btn-secondary" id="btnCancelLiveCapture" style="padding:10px 16px;font-size:0.78rem;">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </section>
 
@@ -6898,9 +7059,356 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
         });
       });
 
-      // ── Dispatch Cross-Platform Bot ──
+      // ── Cross-Platform Live Capture & Notetaker ──
+      let liveMediaStream = null;
+      let liveMicStream = null;
+      let liveAudioContext = null;
+      let liveAnalyser = null;
+      let liveMediaRecorder = null;
+      let liveAudioChunks = [];
+      let liveTimerInterval = null;
+      let liveSecondsElapsed = 0;
+      let liveAnimFrameId = null;
+
+      const btnStartLiveCapture = document.getElementById('btnStartLiveCapture');
+      const btnFinishLiveCapture = document.getElementById('btnFinishLiveCapture');
+      const btnCancelLiveCapture = document.getElementById('btnCancelLiveCapture');
+      const btnOpenMeeting = document.getElementById('btnOpenMeeting');
+      const liveCaptureIdlePanel = document.getElementById('liveCaptureIdlePanel');
+      const liveCaptureActivePanel = document.getElementById('liveCaptureActivePanel');
+      const liveCaptureTimer = document.getElementById('liveCaptureTimer');
+      const liveRecPlatformLabel = document.getElementById('liveRecPlatformLabel');
+      const chkIncludeMic = document.getElementById('chkIncludeMic');
+      const toggleBotDispatcher = document.getElementById('toggleBotDispatcher');
+      const botDispatcherView = document.getElementById('botDispatcherView');
+      const btnCancelBotMode = document.getElementById('btnCancelBotMode');
+
+      // Bot View Toggle
+      if (toggleBotDispatcher) toggleBotDispatcher.addEventListener('click', () => {
+        botDispatcherView.style.display = botDispatcherView.style.display === 'none' ? 'block' : 'none';
+      });
+      if (btnCancelBotMode) btnCancelBotMode.addEventListener('click', () => {
+        botDispatcherView.style.display = 'none';
+      });
+
+      // Quick Open Meeting Button
+      if (externalMeetingUrl && btnOpenMeeting) {
+        externalMeetingUrl.addEventListener('input', () => {
+          const val = externalMeetingUrl.value.trim();
+          if (val.startsWith('http://') || val.startsWith('https://')) {
+            btnOpenMeeting.style.display = 'inline-flex';
+          } else {
+            btnOpenMeeting.style.display = 'none';
+          }
+        });
+        btnOpenMeeting.addEventListener('click', () => {
+          const val = externalMeetingUrl.value.trim();
+          if (val) window.open(val, '_blank');
+        });
+      }
+
+      // Platform Pills Selection
+      const refPlatformPills = document.querySelectorAll('.ref-platform-pill, .wp-platform-pill');
+      refPlatformPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          refPlatformPills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          activePlatform = pill.dataset.platform || 'google_meet';
+
+          if (externalMeetingUrl) {
+            if (activePlatform === 'google_meet') {
+              externalMeetingUrl.placeholder = 'Paste Google Meet link (e.g. https://meet.google.com/abc-defg-hij)…';
+            } else if (activePlatform === 'zoom') {
+              externalMeetingUrl.placeholder = 'Paste Zoom link (e.g. https://zoom.us/j/123456789)…';
+            } else if (activePlatform === 'teams') {
+              externalMeetingUrl.placeholder = 'Paste MS Teams link (e.g. https://teams.microsoft.com/l/meetup-join/…)…';
+            } else {
+              externalMeetingUrl.placeholder = 'Paste meeting link or leave blank for screen audio…';
+            }
+          }
+        });
+      });
+
+      // Helper: Timer display
+      function updateTimerDisplay() {
+        const mins = String(Math.floor(liveSecondsElapsed / 60)).padStart(2, '0');
+        const secs = String(liveSecondsElapsed % 60).padStart(2, '0');
+        if (liveCaptureTimer) liveCaptureTimer.textContent = `${mins}:${secs}`;
+      }
+
+      // Helper: Waveform visualizer
+      function startWaveformVisualizer() {
+        const bars = [
+          document.getElementById('wvBar0'),
+          document.getElementById('wvBar1'),
+          document.getElementById('wvBar2'),
+          document.getElementById('wvBar3'),
+          document.getElementById('wvBar4'),
+          document.getElementById('wvBar5'),
+          document.getElementById('wvBar6')
+        ].filter(Boolean);
+
+        if (!liveAnalyser || bars.length === 0) return;
+        const dataArray = new Uint8Array(liveAnalyser.frequencyBinCount);
+
+        function updateBars() {
+          liveAnalyser.getByteFrequencyData(dataArray);
+          for (let i = 0; i < bars.length; i++) {
+            const val = dataArray[i * 2] || 0;
+            const h = Math.max(4, Math.min(38, Math.round((val / 255) * 38)));
+            bars[i].style.height = `${h}px`;
+          }
+          liveAnimFrameId = requestAnimationFrame(updateBars);
+        }
+        updateBars();
+      }
+
+      // Cleanup media resources
+      function cleanupLiveStreams() {
+        if (liveTimerInterval) { clearInterval(liveTimerInterval); liveTimerInterval = null; }
+        if (liveAnimFrameId) { cancelAnimationFrame(liveAnimFrameId); liveAnimFrameId = null; }
+        if (liveMediaStream) {
+          liveMediaStream.getTracks().forEach(t => t.stop());
+          liveMediaStream = null;
+        }
+        if (liveMicStream) {
+          liveMicStream.getTracks().forEach(t => t.stop());
+          liveMicStream = null;
+        }
+        if (liveAudioContext && liveAudioContext.state !== 'closed') {
+          try { liveAudioContext.close(); } catch (e) {}
+          liveAudioContext = null;
+        }
+      }
+
+      function resetLiveCaptureUI() {
+        if (liveCaptureActivePanel) liveCaptureActivePanel.style.display = 'none';
+        if (liveCaptureIdlePanel) liveCaptureIdlePanel.style.display = 'block';
+        if (btnStartLiveCapture) {
+          btnStartLiveCapture.disabled = false;
+          btnStartLiveCapture.innerHTML = `<span>🎙️ Start Live Meeting Capture</span>`;
+        }
+      }
+
+      // Start Live Capture
+      async function startLiveMeetingCapture() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+          showToast('Your browser does not support screen/tab audio capture. Please use Chrome or Edge.', 'error');
+          return;
+        }
+
+        try {
+          showToast('Select your meeting tab and make sure "Share tab audio" is checked!', 'info');
+
+          // 1. Get Tab/System Audio stream
+          liveMediaStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { displaySurface: 'browser' },
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true
+            }
+          });
+
+          const audioTracks = liveMediaStream.getAudioTracks();
+          if (audioTracks.length === 0) {
+            showToast('⚠️ No tab audio was detected! Remember to check "Also share tab audio".', 'warning');
+          }
+
+          // 2. Audio Context & Destination
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          liveAudioContext = new AudioContextClass();
+          const destination = liveAudioContext.createMediaStreamDestination();
+
+          if (audioTracks.length > 0) {
+            const displaySource = liveAudioContext.createMediaStreamSource(liveMediaStream);
+            displaySource.connect(destination);
+          }
+
+          // 3. User Microphone
+          if (chkIncludeMic && chkIncludeMic.checked) {
+            try {
+              liveMicStream = await navigator.mediaDevices.getUserMedia({
+                audio: { echoCancellation: true, noiseSuppression: true }
+              });
+              const micSource = liveAudioContext.createMediaStreamSource(liveMicStream);
+              micSource.connect(destination);
+            } catch (micErr) {
+              console.warn('Microphone permission not granted:', micErr);
+              showToast('Microphone not included (recording tab audio only)', 'info');
+            }
+          }
+
+          // 4. Analyser for Waveform
+          liveAnalyser = liveAudioContext.createAnalyser();
+          liveAnalyser.fftSize = 32;
+          destination.connect(liveAnalyser);
+
+          // 5. MediaRecorder
+          liveAudioChunks = [];
+          const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+            ? 'audio/webm;codecs=opus'
+            : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
+
+          liveMediaRecorder = new MediaRecorder(destination.stream, mimeType ? { mimeType } : undefined);
+          liveMediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) liveAudioChunks.push(e.data);
+          };
+
+          liveMediaRecorder.onstop = async () => {
+            await processRecordedMeeting();
+          };
+
+          liveMediaRecorder.start(1000);
+
+          // Listen for user stopping share from browser UI
+          liveMediaStream.getVideoTracks().forEach(track => {
+            track.onended = () => {
+              if (liveMediaRecorder && liveMediaRecorder.state === 'recording') {
+                showToast('Meeting tab sharing ended. Processing recording…', 'info');
+                stopLiveMeetingCapture(true);
+              }
+            };
+          });
+
+          // 6. Update UI
+          if (liveCaptureIdlePanel) liveCaptureIdlePanel.style.display = 'none';
+          if (liveCaptureActivePanel) liveCaptureActivePanel.style.display = 'flex';
+
+          const platformLabels = {
+            'google_meet': 'CAPTURING GOOGLE MEET',
+            'zoom': 'CAPTURING ZOOM',
+            'teams': 'CAPTURING MS TEAMS',
+            'desktop': 'CAPTURING MEETING AUDIO'
+          };
+          if (liveRecPlatformLabel) {
+            liveRecPlatformLabel.textContent = platformLabels[activePlatform] || 'CAPTURING LIVE MEETING';
+          }
+
+          liveSecondsElapsed = 0;
+          updateTimerDisplay();
+          liveTimerInterval = setInterval(() => {
+            liveSecondsElapsed++;
+            updateTimerDisplay();
+          }, 1000);
+
+          startWaveformVisualizer();
+          showToast('🎙️ Live capture started! Meeting audio & mic are now recording.', 'success');
+
+        } catch (err) {
+          console.error('Failed to start live capture:', err);
+          if (err.name !== 'NotAllowedError') {
+            showToast('Capture error: ' + err.message, 'error');
+          }
+          cleanupLiveStreams();
+          resetLiveCaptureUI();
+        }
+      }
+
+      function stopLiveMeetingCapture(shouldSave = true) {
+        if (liveTimerInterval) { clearInterval(liveTimerInterval); liveTimerInterval = null; }
+        if (liveAnimFrameId) { cancelAnimationFrame(liveAnimFrameId); liveAnimFrameId = null; }
+
+        if (liveMediaRecorder && liveMediaRecorder.state === 'recording') {
+          if (shouldSave) {
+            liveMediaRecorder.stop();
+          } else {
+            liveMediaRecorder.onstop = null;
+            liveMediaRecorder.stop();
+            cleanupLiveStreams();
+            resetLiveCaptureUI();
+            showToast('Meeting capture cancelled', 'info');
+          }
+        } else {
+          cleanupLiveStreams();
+          resetLiveCaptureUI();
+        }
+      }
+
+      async function processRecordedMeeting() {
+        const mimeType = liveMediaRecorder?.mimeType || 'audio/webm';
+        cleanupLiveStreams();
+        resetLiveCaptureUI();
+
+        if (liveAudioChunks.length === 0) {
+          showToast('No audio data was recorded', 'warning');
+          return;
+        }
+
+        const audioBlob = new Blob(liveAudioChunks, { type: mimeType });
+        if (audioBlob.size < 1000) {
+          showToast('Recording was too short to transcribe', 'warning');
+          return;
+        }
+
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const platformNames = {
+          'google_meet': 'Google Meet',
+          'zoom': 'Zoom',
+          'teams': 'MS Teams',
+          'desktop': 'Live Meeting'
+        };
+        const pName = platformNames[activePlatform] || 'Live Meeting';
+        const urlVal = externalMeetingUrl ? externalMeetingUrl.value.trim() : '';
+        const customTitle = urlVal ? `${pName} Sync (${urlVal.replace(/https?:\/\//, '').slice(0, 20)})` : `${pName} Live Sync (${timeStr})`;
+
+        const formData = new FormData();
+        formData.append('file', audioBlob, `${activePlatform}_live_meeting.webm`);
+        formData.append('title', customTitle);
+        formData.append('workspace_id', (typeof currentWorkspaceId !== 'undefined' ? currentWorkspaceId : null) || 'ws-engineering');
+
+        progressOverlay.classList.add('active');
+        statusMessageText.textContent = 'Uploading live captured meeting audio…';
+        progressBarFill.style.width = '15%';
+
+        try {
+          const res = await fetch(`${API_BASE}/api/meetings/upload`, {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || 'Processing failed');
+
+          const meetingId = data.meeting_id;
+          statusMessageText.textContent = 'Transcribing meeting speech with Faster-Whisper…';
+          progressBarFill.style.width = '45%';
+
+          if (eventSource) eventSource.close();
+          eventSource = new EventSource(`${API_BASE}/api/meetings/${meetingId}/status`);
+          eventSource.onmessage = (ev) => {
+            try {
+              const st = JSON.parse(ev.data);
+              const p = Math.max(10, Math.min(100, parseInt(st.progress || 10, 10)));
+              progressBarFill.style.width = `${p}%`;
+              progressPercentage.textContent = `${p}%`;
+              statusMessageText.textContent = st.message || `Processing ${st.stage}…`;
+
+              if (st.stage === 'done') {
+                eventSource.close();
+                btnRedirectNow.style.display = 'block';
+                btnRedirectNow.onclick = () => {
+                  window.location.href = getAppUrl(`readback.html?meeting=${encodeURIComponent(meetingId)}`);
+                };
+                setTimeout(() => {
+                  window.location.href = getAppUrl(`readback.html?meeting=${encodeURIComponent(meetingId)}`);
+                }, 1500);
+              }
+            } catch (e) {}
+          };
+        } catch (err) {
+          statusMessageText.textContent = `Error: ${err.message}`;
+          statusMessageText.style.color = '#ef4444';
+          showToast(err.message, 'error');
+        }
+      }
+
+      if (btnStartLiveCapture) btnStartLiveCapture.addEventListener('click', startLiveMeetingCapture);
+      if (btnFinishLiveCapture) btnFinishLiveCapture.addEventListener('click', () => stopLiveMeetingCapture(true));
+      if (btnCancelLiveCapture) btnCancelLiveCapture.addEventListener('click', () => stopLiveMeetingCapture(false));
+
+      // Autonomous Bot Dispatcher
       if (btnDispatchBot) btnDispatchBot.addEventListener('click', async () => {
-        const url = externalMeetingUrl.value.trim();
+        const url = externalMeetingUrl ? externalMeetingUrl.value.trim() : '';
         if (!url) {
           showToast('Please paste a valid meeting link', 'error');
           return;
@@ -6908,8 +7416,10 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
 
         btnDispatchBot.disabled = true;
         btnDispatchBot.innerHTML = `<span>Dispatching…</span>`;
-        botDispatchStatus.style.display = 'block';
-        botDispatchStatus.innerHTML = `⏳ Sending AI Notetaker bot into meeting…`;
+        if (botDispatchStatus) {
+          botDispatchStatus.style.display = 'block';
+          botDispatchStatus.innerHTML = `⏳ Sending AI Notetaker bot into meeting…`;
+        }
 
         try {
           const res = await fetch(`${API_BASE}/api/connectors/join`, {
@@ -6926,15 +7436,15 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
               <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;margin-top:8px;">
                 <div style="color:#b45309;font-weight:700;font-size:0.85rem;margin-bottom:4px;">⚠️ Simulation Mode (No RECALL_API_KEY in .env)</div>
                 <div style="font-size:0.75rem;color:#78350f;line-height:1.4;">
-                  A real bot requires a <strong>Recall.ai API Key</strong> in <code>.env</code> to enter Google Meet / Zoom.<br>
-                  <em>Tip:</em> You can also <strong>record the Google Meet</strong> and drop the recording into <strong>Upload Meeting Recording</strong>!
+                  A real bot requires a <strong>Recall.ai API Key</strong> in <code>.env</code>.<br>
+                  <em>Tip:</em> Use <strong>Start Live Meeting Capture</strong> above to capture this call directly with zero keys!
                 </div>
                 <div style="margin-top:6px;font-size:0.75rem;">
                   <span style="color:#64748b;">Mock Meeting ID:</span> <code>${data.meeting_id.slice(0,8)}…</code>
                 </div>
               </div>
             `;
-            showToast('Simulated bot dispatched (add RECALL_API_KEY for live bot)', 'info');
+            showToast('Simulated bot dispatched (use Live Capture for zero-bot recording)', 'info');
           } else {
             botDispatchStatus.innerHTML = `
               <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px;margin-top:8px;">
@@ -6949,13 +7459,15 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
             `;
             showToast('Bot dispatched to live call!', 'success');
           }
-          loadRecentMeetings();
+          if (typeof loadRecentMeetings === 'function') loadRecentMeetings();
         } catch (err) {
-          botDispatchStatus.innerHTML = `<span style="color:#ef4444;">⚠️ ${escapeHtml(err.message)}</span>`;
+          if (botDispatchStatus) {
+            botDispatchStatus.innerHTML = `<span style="color:#ef4444;">⚠️ ${escapeHtml(err.message)}</span>`;
+          }
           showToast(err.message, 'error');
         } finally {
           btnDispatchBot.disabled = false;
-          btnDispatchBot.innerHTML = `<span>Dispatch Bot</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
+          btnDispatchBot.innerHTML = `<span>Dispatch Bot</span>`;
         }
       });
 

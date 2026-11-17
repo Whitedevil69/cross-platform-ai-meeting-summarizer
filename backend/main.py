@@ -221,6 +221,7 @@ async def me(request: Request):
     user_id = get_current_user_id(auth)
     return {"user_id": user_id, "auth_enabled": os.getenv("AUTH_ENABLED", "false").lower() == "true"}
 
+@app.post("/api/upload")
 @app.post("/api/meetings/upload")
 async def upload_meeting(
     request: Request,
