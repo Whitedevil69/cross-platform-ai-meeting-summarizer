@@ -6921,14 +6921,34 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
           const data = await res.json();
           if (!res.ok) throw new Error(data.detail || 'Bot dispatch failed');
 
-          botDispatchStatus.innerHTML = `
-            <div style="color:#34d399;font-weight:600;margin-bottom:4px;">✅ Bot successfully dispatched!</div>
-            <div>Meeting ID: <span style="font-family:var(--font-mono);color:#c4b5fd;">${data.meeting_id.slice(0,8)}…</span></div>
-            <div style="margin-top:6px;">
-              <a href="/app/readback.html?meeting=${encodeURIComponent(data.meeting_id)}" style="color:#38bdf8;text-decoration:underline;font-size:0.8rem;">Open Live Read-Back &amp; Notes →</a>
-            </div>
-          `;
-          showToast('Bot dispatched to meeting!', 'success');
+          if (data.is_simulation) {
+            botDispatchStatus.innerHTML = `
+              <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;margin-top:8px;">
+                <div style="color:#b45309;font-weight:700;font-size:0.85rem;margin-bottom:4px;">⚠️ Simulation Mode (No RECALL_API_KEY in .env)</div>
+                <div style="font-size:0.75rem;color:#78350f;line-height:1.4;">
+                  A real bot requires a <strong>Recall.ai API Key</strong> in <code>.env</code> to enter Google Meet / Zoom.<br>
+                  <em>Tip:</em> You can also <strong>record the Google Meet</strong> and drop the recording into <strong>Upload Meeting Recording</strong>!
+                </div>
+                <div style="margin-top:6px;font-size:0.75rem;">
+                  <span style="color:#64748b;">Mock Meeting ID:</span> <code>${data.meeting_id.slice(0,8)}…</code>
+                </div>
+              </div>
+            `;
+            showToast('Simulated bot dispatched (add RECALL_API_KEY for live bot)', 'info');
+          } else {
+            botDispatchStatus.innerHTML = `
+              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px;margin-top:8px;">
+                <div style="color:#166534;font-weight:700;font-size:0.85rem;margin-bottom:4px;">✅ Bot Dispatched to Live Call!</div>
+                <div style="font-size:0.75rem;color:#15803d;line-height:1.4;">
+                  Meeting Intelligence Bot is entering your meeting. Please click <strong>"Admit"</strong> in Google Meet if prompted.
+                </div>
+                <div style="margin-top:6px;">
+                  <a href="/app/readback.html?meeting=${encodeURIComponent(data.meeting_id)}" style="color:#0284c7;font-weight:700;font-size:0.8rem;text-decoration:underline;">Open Live Read-Back &amp; Notes →</a>
+                </div>
+              </div>
+            `;
+            showToast('Bot dispatched to live call!', 'success');
+          }
           loadRecentMeetings();
         } catch (err) {
           botDispatchStatus.innerHTML = `<span style="color:#ef4444;">⚠️ ${escapeHtml(err.message)}</span>`;

@@ -684,6 +684,7 @@ async def join_external_meeting(req: JoinMeetingRequest):
         "platform": platform,
         "details": parsed,
         "status": "bot_dispatched",
+        "is_simulation": bot_data.get("is_simulation", False),
         "record_url": f"/api/meetings/{meeting_id}",
     }
 
