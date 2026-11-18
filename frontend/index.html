@@ -2905,6 +2905,34 @@
       color: #ffffff;
       border-color: var(--dock-dark);
     }
+    .sub-tab-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      background: #f4f6f4;
+      border: 1.5px solid #e2e8e2;
+      font-size: 0.73rem;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+    .sub-tab-pill:hover {
+      background: #e9ede9;
+      color: #18191b;
+      border-color: #cbd5e1;
+    }
+    .sub-tab-pill.active {
+      background: #18191b;
+      color: #ffffff;
+      border-color: #18191b;
+    }
+    .platform-input-panel {
+      animation: fadeIn 0.18s ease;
+    }
     .ref-bot-input-group {
       display: flex;
       align-items: center;
@@ -3497,22 +3525,87 @@
 
                   <!-- Idle Setup Panel -->
                   <div id="liveCaptureIdlePanel">
-                    <!-- Meeting URL Row with Quick Open -->
-                    <div class="ref-bot-input-group" style="margin-bottom:10px;">
-                      <input type="text" id="externalMeetingUrl" class="ref-bot-input" placeholder="Paste Google Meet link (e.g. https://meet.google.com/abc-defg-hij)…">
-                      <button type="button" class="ref-btn-secondary" id="btnOpenMeeting" title="Open meeting link in new tab" style="display:none;padding:8px 14px;font-size:0.78rem;">
-                        <span>Open ↗</span>
-                      </button>
+                    
+                    <!-- Panel 1: Google Meet -->
+                    <div id="panelGoogleMeet" class="platform-input-panel">
+                      <div class="ref-bot-input-group" style="margin-bottom:8px;">
+                        <input type="text" id="meetUrlInput" class="ref-bot-input" placeholder="Google Meet link or 10-letter code (e.g. gma-hmox-qwe)…">
+                        <button type="button" class="ref-btn-secondary" id="btnTestOpenMeet" title="Launch Google Meet in new tab" style="padding:8px 14px;font-size:0.78rem;">
+                          <span>Launch Meet ↗</span>
+                        </button>
+                      </div>
+                      <div style="font-size:0.72rem;color:#059669;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                        <span>✓ Host sees your real Google account &amp; webcam face-to-face.</span>
+                      </div>
                     </div>
 
-                    <!-- Capture Options & Action Button -->
+                    <!-- Panel 2: Zoom -->
+                    <div id="panelZoom" class="platform-input-panel" style="display:none;">
+                      <!-- Zoom Sub-tab Pills -->
+                      <div style="display:flex;gap:8px;margin-bottom:10px;">
+                        <button type="button" class="sub-tab-pill active" id="btnZoomTabId">🔑 Meeting ID &amp; Passcode</button>
+                        <button type="button" class="sub-tab-pill" id="btnZoomTabLink">🔗 Full Invite Link</button>
+                      </div>
+
+                      <!-- Subview 1: ID & Passcode -->
+                      <div id="zoomIdView">
+                        <div style="display:grid;grid-template-columns: 1.4fr 1fr;gap:8px;margin-bottom:8px;">
+                          <input type="text" id="zoomMeetingId" class="ref-bot-input" placeholder="Meeting ID (e.g. 849 2011 4432)">
+                          <input type="text" id="zoomPasscode" class="ref-bot-input" placeholder="Passcode (optional)">
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:0.72rem;color:#475569;">
+                          <div style="display:flex;gap:14px;align-items:center;">
+                            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                              <input type="radio" name="zoomClientMode" value="web" checked style="accent-color:#18191b;">
+                              <span>In-Browser Web Client (Zero-Install)</span>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                              <input type="radio" name="zoomClientMode" value="app" style="accent-color:#18191b;">
+                              <span>Zoom Desktop App</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Subview 2: Full Link -->
+                      <div id="zoomLinkView" style="display:none;margin-bottom:8px;">
+                        <input type="text" id="zoomLinkInput" class="ref-bot-input" placeholder="Paste full Zoom link (https://zoom.us/j/123456789?pwd=…)">
+                      </div>
+
+                      <div style="font-size:0.72rem;color:#059669;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                        <span>✓ Auto-injects Meeting ID &amp; Passcode. Host sees your real name &amp; video.</span>
+                      </div>
+                    </div>
+
+                    <!-- Panel 3: MS Teams -->
+                    <div id="panelTeams" class="platform-input-panel" style="display:none;">
+                      <div style="display:grid;grid-template-columns: 1.4fr 1fr;gap:8px;margin-bottom:8px;">
+                        <input type="text" id="teamsMeetingId" class="ref-bot-input" placeholder="Teams Meeting ID or Link">
+                        <input type="text" id="teamsPasscode" class="ref-bot-input" placeholder="Passcode (optional)">
+                      </div>
+                      <div style="font-size:0.72rem;color:#059669;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                        <span>✓ Opens Teams with your real account. Host sees you in participant list.</span>
+                      </div>
+                    </div>
+
+                    <!-- Panel 4: Any Tab / Desktop -->
+                    <div id="panelDesktop" class="platform-input-panel" style="display:none;">
+                      <div style="margin-bottom:8px;">
+                        <input type="text" id="desktopMeetingTitle" class="ref-bot-input" placeholder="Meeting Topic (e.g. Sprint Discussion, YouTube Stream, Discord)">
+                      </div>
+                      <div style="font-size:0.72rem;color:#64748b;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                        <span>💡 Captures audio from any screen, window, or desktop voice application.</span>
+                      </div>
+                    </div>
+
+                    <!-- Unified Action Bar -->
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
                       <label style="display:flex;align-items:center;gap:6px;font-size:0.75rem;color:#475569;cursor:pointer;user-select:none;">
                         <input type="checkbox" id="chkIncludeMic" checked style="accent-color:#18191b;">
                         <span>Include My Microphone (Mix speech)</span>
                       </label>
                       <button type="button" class="ref-btn-primary" id="btnStartLiveCapture" style="background:#18191b;padding:10px 22px;">
-                        <span>🎙️ Start Live Meeting Capture</span>
+                        <span id="btnStartCaptureLabel">🚀 Launch Meet &amp; Start AI Copilot</span>
                       </button>
                     </div>
 
@@ -3525,7 +3618,7 @@
                     <!-- Hidden Bot Dispatcher View -->
                     <div id="botDispatcherView" style="display:none;margin-top:10px;padding:12px;background:#f8faf8;border-radius:14px;border:1px solid #e2e8e2;">
                       <div style="font-size:0.75rem;font-weight:700;color:#18191b;margin-bottom:6px;">Autonomous Bot Dispatcher (Recall.ai)</div>
-                      <div style="font-size:0.72rem;color:#64748b;margin-bottom:8px;">Requires <code>RECALL_API_KEY</code> in <code>.env</code>. Dispatches cloud bot to dial into meeting link.</div>
+                      <div style="font-size:0.72rem;color:#64748b;margin-bottom:8px;">Requires <code>RECALL_API_KEY</code> in <code>.env</code>. Dispatches cloud bot into meeting link.</div>
                       <div style="display:flex;gap:8px;align-items:center;">
                         <button type="button" class="ref-btn-primary" id="btnDispatchBot" style="font-size:0.75rem;padding:8px 16px;">
                           <span>🚀 Dispatch Bot to Meeting Link</span>
@@ -3536,7 +3629,6 @@
                     </div>
                   </div>
 
-                  <!-- Active Recording HUD (Shown when capturing) -->
                   <div id="liveCaptureActivePanel" style="display:none;" class="live-capture-hud">
                     <div class="live-capture-header">
                       <div class="live-rec-badge">
@@ -7061,9 +7153,9 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
       let liveAnimFrameId = null;
 
       const btnStartLiveCapture = document.getElementById('btnStartLiveCapture');
+      const btnStartCaptureLabel = document.getElementById('btnStartCaptureLabel');
       const btnFinishLiveCapture = document.getElementById('btnFinishLiveCapture');
       const btnCancelLiveCapture = document.getElementById('btnCancelLiveCapture');
-      const btnOpenMeeting = document.getElementById('btnOpenMeeting');
       const liveCaptureIdlePanel = document.getElementById('liveCaptureIdlePanel');
       const liveCaptureActivePanel = document.getElementById('liveCaptureActivePanel');
       const liveCaptureTimer = document.getElementById('liveCaptureTimer');
@@ -7073,6 +7165,27 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
       const botDispatcherView = document.getElementById('botDispatcherView');
       const btnCancelBotMode = document.getElementById('btnCancelBotMode');
 
+      // Platform specific inputs
+      const panelGoogleMeet = document.getElementById('panelGoogleMeet');
+      const panelZoom = document.getElementById('panelZoom');
+      const panelTeams = document.getElementById('panelTeams');
+      const panelDesktop = document.getElementById('panelDesktop');
+
+      const meetUrlInput = document.getElementById('meetUrlInput');
+      const btnTestOpenMeet = document.getElementById('btnTestOpenMeet');
+
+      const btnZoomTabId = document.getElementById('btnZoomTabId');
+      const btnZoomTabLink = document.getElementById('btnZoomTabLink');
+      const zoomIdView = document.getElementById('zoomIdView');
+      const zoomLinkView = document.getElementById('zoomLinkView');
+      const zoomMeetingId = document.getElementById('zoomMeetingId');
+      const zoomPasscode = document.getElementById('zoomPasscode');
+      const zoomLinkInput = document.getElementById('zoomLinkInput');
+
+      const teamsMeetingId = document.getElementById('teamsMeetingId');
+      const teamsPasscode = document.getElementById('teamsPasscode');
+      const desktopMeetingTitle = document.getElementById('desktopMeetingTitle');
+
       // Bot View Toggle
       if (toggleBotDispatcher) toggleBotDispatcher.addEventListener('click', () => {
         botDispatcherView.style.display = botDispatcherView.style.display === 'none' ? 'block' : 'none';
@@ -7081,23 +7194,72 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
         botDispatcherView.style.display = 'none';
       });
 
-      // Quick Open Meeting Button
-      if (externalMeetingUrl && btnOpenMeeting) {
-        externalMeetingUrl.addEventListener('input', () => {
-          const val = externalMeetingUrl.value.trim();
-          if (val.startsWith('http://') || val.startsWith('https://')) {
-            btnOpenMeeting.style.display = 'inline-flex';
-          } else {
-            btnOpenMeeting.style.display = 'none';
-          }
+      // Zoom Sub-tabs
+      if (btnZoomTabId && btnZoomTabLink) {
+        btnZoomTabId.addEventListener('click', () => {
+          btnZoomTabId.classList.add('active');
+          btnZoomTabLink.classList.remove('active');
+          zoomIdView.style.display = 'block';
+          zoomLinkView.style.display = 'none';
         });
-        btnOpenMeeting.addEventListener('click', () => {
-          const val = externalMeetingUrl.value.trim();
-          if (val) window.open(val, '_blank');
+        btnZoomTabLink.addEventListener('click', () => {
+          btnZoomTabLink.classList.add('active');
+          btnZoomTabId.classList.remove('active');
+          zoomIdView.style.display = 'none';
+          zoomLinkView.style.display = 'block';
         });
       }
 
-      // Platform Pills Selection
+      // Quick Launch Meet Button
+      if (btnTestOpenMeet) {
+        btnTestOpenMeet.addEventListener('click', () => {
+          const url = getMeetingLaunchUrl();
+          if (url) window.open(url, '_blank');
+        });
+      }
+
+      // Helper: calculate URL based on selected platform
+      function getMeetingLaunchUrl() {
+        if (activePlatform === 'google_meet') {
+          let val = meetUrlInput ? meetUrlInput.value.trim() : '';
+          if (!val) return 'https://meet.google.com/new';
+          if (!val.startsWith('http://') && !val.startsWith('https://')) {
+            val = `https://meet.google.com/${val.replace(/[^a-zA-Z0-9-]/g, '')}`;
+          }
+          return val;
+        } else if (activePlatform === 'zoom') {
+          if (zoomLinkView && zoomLinkView.style.display !== 'none') {
+            const linkVal = zoomLinkInput ? zoomLinkInput.value.trim() : '';
+            return linkVal || 'https://zoom.us/join';
+          }
+          const mid = zoomMeetingId ? zoomMeetingId.value.trim().replace(/[\s-]/g, '') : '';
+          const pwd = zoomPasscode ? zoomPasscode.value.trim() : '';
+          const mode = document.querySelector('input[name="zoomClientMode"]:checked')?.value || 'web';
+
+          if (!mid) return 'https://zoom.us/join';
+
+          if (mode === 'web') {
+            let url = `https://app.zoom.us/wc/${mid}/join`;
+            if (pwd) url += `?pwd=${encodeURIComponent(pwd)}`;
+            return url;
+          } else {
+            let url = `zoommtg://zoom.us/join?action=join&confno=${mid}`;
+            if (pwd) url += `&pwd=${encodeURIComponent(pwd)}`;
+            return url;
+          }
+        } else if (activePlatform === 'teams') {
+          const val = teamsMeetingId ? teamsMeetingId.value.trim() : '';
+          const pwd = teamsPasscode ? teamsPasscode.value.trim() : '';
+          if (!val) return 'https://teams.microsoft.com';
+          if (val.startsWith('http://') || val.startsWith('https://')) {
+            return val;
+          }
+          return `https://teams.live.com/meet/${val.replace(/[\s-]/g, '')}${pwd ? `?p=${encodeURIComponent(pwd)}` : ''}`;
+        }
+        return null;
+      }
+
+      // Platform Pills Selection & Dynamic Panel Switching
       const refPlatformPills = document.querySelectorAll('.ref-platform-pill, .wp-platform-pill');
       refPlatformPills.forEach(pill => {
         pill.addEventListener('click', () => {
@@ -7105,16 +7267,25 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
           pill.classList.add('active');
           activePlatform = pill.dataset.platform || 'google_meet';
 
-          if (externalMeetingUrl) {
-            if (activePlatform === 'google_meet') {
-              externalMeetingUrl.placeholder = 'Paste Google Meet link (e.g. https://meet.google.com/abc-defg-hij)…';
-            } else if (activePlatform === 'zoom') {
-              externalMeetingUrl.placeholder = 'Paste Zoom link (e.g. https://zoom.us/j/123456789)…';
-            } else if (activePlatform === 'teams') {
-              externalMeetingUrl.placeholder = 'Paste MS Teams link (e.g. https://teams.microsoft.com/l/meetup-join/…)…';
-            } else {
-              externalMeetingUrl.placeholder = 'Paste meeting link or leave blank for screen audio…';
-            }
+          // Hide all platform input panels
+          if (panelGoogleMeet) panelGoogleMeet.style.display = 'none';
+          if (panelZoom) panelZoom.style.display = 'none';
+          if (panelTeams) panelTeams.style.display = 'none';
+          if (panelDesktop) panelDesktop.style.display = 'none';
+
+          // Show selected panel & update button label
+          if (activePlatform === 'google_meet') {
+            if (panelGoogleMeet) panelGoogleMeet.style.display = 'block';
+            if (btnStartCaptureLabel) btnStartCaptureLabel.innerHTML = '🚀 Launch Meet &amp; Start AI Copilot';
+          } else if (activePlatform === 'zoom') {
+            if (panelZoom) panelZoom.style.display = 'block';
+            if (btnStartCaptureLabel) btnStartCaptureLabel.innerHTML = '🚀 Launch Zoom &amp; Start AI Copilot';
+          } else if (activePlatform === 'teams') {
+            if (panelTeams) panelTeams.style.display = 'block';
+            if (btnStartCaptureLabel) btnStartCaptureLabel.innerHTML = '🚀 Launch Teams &amp; Start AI Copilot';
+          } else {
+            if (panelDesktop) panelDesktop.style.display = 'block';
+            if (btnStartCaptureLabel) btnStartCaptureLabel.innerHTML = '🎙️ Start Screen/Tab AI Capture';
           }
         });
       });
@@ -7176,21 +7347,29 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
         if (liveCaptureIdlePanel) liveCaptureIdlePanel.style.display = 'block';
         if (btnStartLiveCapture) {
           btnStartLiveCapture.disabled = false;
-          btnStartLiveCapture.innerHTML = `<span>🎙️ Start Live Meeting Capture</span>`;
         }
       }
 
-      // Start Live Capture
+      // Start Live Meeting Copilot & Audio Capture
       async function startLiveMeetingCapture() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
           showToast('Your browser does not support screen/tab audio capture. Please use Chrome or Edge.', 'error');
           return;
         }
 
-        try {
-          showToast('Select your meeting tab and make sure "Share tab audio" is checked!', 'info');
+        // 1. Auto-launch the meeting tab/window first if URL available
+        const launchUrl = getMeetingLaunchUrl();
+        if (launchUrl) {
+          try {
+            window.open(launchUrl, '_blank');
+            showToast(`🚀 Launching meeting in new tab... Select it in Chrome's share popup!`, 'info');
+          } catch(e) {
+            console.warn('Popup blocked or launch error:', e);
+          }
+        }
 
-          // 1. Get Tab/System Audio stream
+        try {
+          // 2. Prompt Chrome DisplayMedia capture
           liveMediaStream = await navigator.mediaDevices.getDisplayMedia({
             video: { displaySurface: 'browser' },
             audio: {
@@ -7202,10 +7381,10 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
 
           const audioTracks = liveMediaStream.getAudioTracks();
           if (audioTracks.length === 0) {
-            showToast('⚠️ No tab audio was detected! Remember to check "Also share tab audio".', 'warning');
+            showToast('⚠️ No tab audio detected! Ensure "Also share tab audio" is checked in Chrome dialog.', 'warning');
           }
 
-          // 2. Audio Context & Destination
+          // 3. Audio Context & Destination Mixer
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
           liveAudioContext = new AudioContextClass();
           const destination = liveAudioContext.createMediaStreamDestination();
@@ -7215,7 +7394,7 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
             displaySource.connect(destination);
           }
 
-          // 3. User Microphone
+          // 4. Capture User Microphone
           if (chkIncludeMic && chkIncludeMic.checked) {
             try {
               liveMicStream = await navigator.mediaDevices.getUserMedia({
@@ -7229,12 +7408,12 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
             }
           }
 
-          // 4. Analyser for Waveform
+          // 5. Analyser for Real-Time Equalizer Waveform
           liveAnalyser = liveAudioContext.createAnalyser();
           liveAnalyser.fftSize = 32;
           destination.connect(liveAnalyser);
 
-          // 5. MediaRecorder
+          // 6. MediaRecorder for continuous Opus chunking
           liveAudioChunks = [];
           const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
             ? 'audio/webm;codecs=opus'
@@ -7251,7 +7430,7 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
 
           liveMediaRecorder.start(1000);
 
-          // Listen for user stopping share from browser UI
+          // Listen for user stopping share from Chrome's floating bar
           liveMediaStream.getVideoTracks().forEach(track => {
             track.onended = () => {
               if (liveMediaRecorder && liveMediaRecorder.state === 'recording') {
@@ -7261,7 +7440,7 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
             };
           });
 
-          // 6. Update UI
+          // 7. Update UI to Active HUD
           if (liveCaptureIdlePanel) liveCaptureIdlePanel.style.display = 'none';
           if (liveCaptureActivePanel) liveCaptureActivePanel.style.display = 'flex';
 
@@ -7269,10 +7448,10 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
             'google_meet': 'CAPTURING GOOGLE MEET',
             'zoom': 'CAPTURING ZOOM',
             'teams': 'CAPTURING MS TEAMS',
-            'desktop': 'CAPTURING MEETING AUDIO'
+            'desktop': 'CAPTURING LIVE CALL'
           };
           if (liveRecPlatformLabel) {
-            liveRecPlatformLabel.textContent = platformLabels[activePlatform] || 'CAPTURING LIVE MEETING';
+            liveRecPlatformLabel.textContent = platformLabels[activePlatform] || 'CAPTURING LIVE CALL';
           }
 
           liveSecondsElapsed = 0;
@@ -7283,7 +7462,7 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
           }, 1000);
 
           startWaveformVisualizer();
-          showToast('🎙️ Live capture started! Meeting audio & mic are now recording.', 'success');
+          showToast('🎙️ Live Copilot Active! Meeting audio & your mic are recording live.', 'success');
 
         } catch (err) {
           console.error('Failed to start live capture:', err);
@@ -7339,11 +7518,18 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
           'desktop': 'Live Meeting'
         };
         const pName = platformNames[activePlatform] || 'Live Meeting';
-        const urlVal = externalMeetingUrl ? externalMeetingUrl.value.trim() : '';
-        const customTitle = urlVal ? `${pName} Sync (${urlVal.replace(/https?:\/\//, '').slice(0, 20)})` : `${pName} Live Sync (${timeStr})`;
+        
+        // Derive meeting title
+        let customTitle = `${pName} Live Sync (${timeStr})`;
+        if (activePlatform === 'google_meet' && meetUrlInput && meetUrlInput.value.trim()) {
+          customTitle = `Google Meet (${meetUrlInput.value.trim().slice(-12)})`;
+        } else if (activePlatform === 'zoom') {
+          const mid = zoomMeetingId?.value?.trim() || zoomLinkInput?.value?.trim() || '';
+          if (mid) customTitle = `Zoom Sync (${mid.slice(-10)})`;
+        }
 
         const formData = new FormData();
-        formData.append('file', audioBlob, `${activePlatform}_live_meeting.webm`);
+        formData.append('file', audioBlob, `${activePlatform}_live_copilot.webm`);
         formData.append('title', customTitle);
         formData.append('workspace_id', (typeof currentWorkspaceId !== 'undefined' ? currentWorkspaceId : null) || 'ws-engineering');
 
