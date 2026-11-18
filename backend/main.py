@@ -178,6 +178,19 @@ async def root():
     return {"message": "Meeting Intelligence API", "docs": "/docs", "app": "/app"}
 
 
+@app.get("/api/download/documentation")
+async def download_documentation():
+    """Direct download endpoint for the comprehensive system documentation Word file."""
+    doc_path = Path(__file__).parent.parent / "SYNCRA_SYSTEM_DOCUMENTATION.docx"
+    if not doc_path.exists():
+        raise HTTPException(404, "Documentation file not found")
+    return FileResponse(
+        path=str(doc_path),
+        filename="SYNCRA_SYSTEM_DOCUMENTATION.docx",
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+
 # ── Auth endpoints ────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
