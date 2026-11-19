@@ -2961,6 +2961,11 @@
 
       // ── Step 9: Audio Mute / Unmute Toggle ────────────────────────────
       function toggleMute() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showToast('📱 Mobile Safari requires HTTPS for mic streaming. Connected in Live Attendee & Caption mode.', 'info');
+          return;
+        }
+
         isMuted = !isMuted;
 
         // Toggle LiveKit Track
