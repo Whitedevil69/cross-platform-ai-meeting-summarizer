@@ -445,6 +445,15 @@
     }
 
     /* Card 2: Chartreuse Highlight Card (Exact Dribbble Match) */
+    @keyframes handoffGlow {
+      0% { box-shadow: 0 0 0 rgba(16, 185, 129, 0); transform: translateY(0); }
+      50% { box-shadow: 0 0 35px rgba(16, 185, 129, 0.45); transform: translateY(-4px); border-color: #10b981; }
+      100% { box-shadow: 0 0 0 rgba(16, 185, 129, 0); transform: translateY(0); }
+    }
+    .recording-handoff-pulse {
+      animation: handoffGlow 1.8s ease-in-out infinite;
+      border-color: #10b981 !important;
+    }
     .ref-card-highlight {
       background: linear-gradient(135deg, var(--highlight-lime) 0%, var(--highlight-lime-dark) 100%);
       border-radius: 24px;
@@ -3697,15 +3706,23 @@
                     <!-- File Selected State -->
                     <div class="ref-file-selected-box" id="fileSelectedBox">
                       <div style="display:flex;align-items:center;gap:8px;text-align:left;">
-                        <span>🎵</span>
+                        <span id="selectedFileIcon" style="font-size:1.1rem;">🎵</span>
                         <div>
                           <div id="selectedFileName" style="font-weight:700;font-size:0.82rem;color:#18191b;">recording.mp3</div>
                           <div id="selectedFileSize" style="font-size:0.7rem;color:#64748b;">14.2 MB</div>
                         </div>
                       </div>
-                      <button type="button" id="btnRemoveFile" style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-weight:700;padding:4px 8px;">✕</button>
+                      <div style="display:flex;align-items:center;gap:6px;">
+                        <a id="btnDownloadRecording" href="#" download="recording.webm" style="display:none;background:#f1f5f9;color:#334155;border-radius:6px;padding:4px 8px;font-size:0.72rem;font-weight:600;text-decoration:none;" title="Download full recorded video file">⬇ Save</a>
+                        <button type="button" id="btnRemoveFile" style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-weight:700;padding:4px 8px;">✕</button>
+                      </div>
                     </div>
                     <input type="file" id="fileInput" accept=".mp3,.wav,.mp4,.m4a,.aac,.webm,.ogg" style="display:none;">
+                  </div>
+
+                  <!-- Meeting Title Input for Upload -->
+                  <div style="margin-top:10px;">
+                    <input type="text" id="uploadMeetingTitle" class="ref-text-input" placeholder="Meeting Title (e.g. Google Meet Intelligence Sync)" style="font-size:0.78rem;padding:7px 12px;width:100%;box-sizing:border-box;border-radius:10px;border:1px solid #e2e8f0;">
                   </div>
 
                   <button type="button" class="ref-btn-primary" id="btnProcessMeeting" style="width:100%;margin-top:10px;">
@@ -7154,6 +7171,104 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
 
       const btnStartLiveCapture = document.getElementById('btnStartLiveCapture');
       const btnStartCaptureLabel = document.getElementById('btnStartCaptureLabel');
+      const btnPopoutPip = document.getElementById('btnPopoutPip');
+
+      // Picture-in-Picture Floating AI Copilot for Google Meet / Zoom tabs
+      if (btnPopoutPip) {
+        btnPopoutPip.addEventListener('click', async () => {
+          if ('documentPictureInPicture' in window) {
+            try {
+              const pipWindow = await window.documentPictureInPicture.requestWindow({
+                width: 360,
+                height: 250
+              });
+
+              // Copy styles into PiP window
+              [...document.styleSheets].forEach(styleSheet => {
+                try {
+                  const cssRules = [...styleSheet.cssRules].map(r => r.cssText).join('');
+                  const style = document.createElement('style');
+                  style.textContent = cssRules;
+                  pipWindow.document.head.appendChild(style);
+                } catch (e) {
+                  const link = document.createElement('link');
+                  link.rel = 'stylesheet';
+                  link.type = styleSheet.type;
+                  link.href = styleSheet.href;
+                  pipWindow.document.head.appendChild(link);
+                }
+              });
+
+              pipWindow.document.body.innerHTML = `
+                <div class="pip-hud-body">
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;"></span>
+                      <span style="font-weight:700;font-size:0.8rem;letter-spacing:0.5px;">SYNCRA AI COPILOT</span>
+                    </div>
+                    <span id="pipTimer" style="font-family:monospace;font-weight:700;color:#10b981;font-size:0.95rem;">${liveCaptureTimer ? liveCaptureTimer.textContent : '00:00'}</span>
+                  </div>
+                  <div style="background:#1e293b;border-radius:10px;padding:12px;text-align:center;">
+                    <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:6px;">Capturing Google Meet Screen & Audio</div>
+                    <div style="font-size:0.85rem;font-weight:600;color:#e2e8f0;">Hovering over your live call</div>
+                  </div>
+                  <button type="button" id="pipFinishBtn" style="background:#ef4444;color:#ffffff;border:none;border-radius:10px;padding:10px;font-weight:700;font-size:0.82rem;cursor:pointer;width:100%;transition:all 0.15s;">
+                    ⏹ Finish & Process in Syncra
+                  </button>
+                </div>
+              `;
+
+              // Mirror timer into PiP
+              const pipTimerEl = pipWindow.document.getElementById('pipTimer');
+              const pipSyncInterval = setInterval(() => {
+                if (pipTimerEl && liveCaptureTimer) {
+                  pipTimerEl.textContent = liveCaptureTimer.textContent;
+                }
+              }, 500);
+
+              const pipFinishBtn = pipWindow.document.getElementById('pipFinishBtn');
+              if (pipFinishBtn) {
+                pipFinishBtn.addEventListener('click', () => {
+                  stopLiveMeetingCapture(true);
+                  pipWindow.close();
+                });
+              }
+
+              pipWindow.addEventListener('pagehide', () => {
+                clearInterval(pipSyncInterval);
+              });
+
+              showToast('📌 Floating AI Copilot opened! You can drag it directly over your Google Meet tab.', 'success');
+              return;
+            } catch (pipErr) {
+              console.warn('Document PiP request error:', pipErr);
+            }
+          }
+
+          // Fallback: popup window
+          const popup = window.open('', 'SyncraFloatingCopilot', 'width=360,height=260,menubar=no,toolbar=no,location=no');
+          if (popup) {
+            popup.document.write(`
+              <html>
+              <head><title>Syncra AI Copilot</title></head>
+              <body style="background:#0f172a;color:#fff;font-family:sans-serif;padding:20px;text-align:center;">
+                <h3 style="color:#10b981;margin-top:0;">🟢 Syncra Copilot Live</h3>
+                <p style="font-size:13px;color:#cbd5e1;">Recording Google Meet tab audio + screen video in background.</p>
+                <button onclick="window.opener.postMessage('stop_capture', '*');window.close();" style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:bold;cursor:pointer;">⏹ Finish Meeting</button>
+              </body>
+              </html>
+            `);
+            showToast('📌 Floating mini window opened! Keep it beside your Google Meet tab.', 'info');
+          }
+        });
+      }
+
+      window.addEventListener('message', (ev) => {
+        if (ev.data === 'stop_capture') {
+          stopLiveMeetingCapture(true);
+        }
+      });
+
       const btnFinishLiveCapture = document.getElementById('btnFinishLiveCapture');
       const btnCancelLiveCapture = document.getElementById('btnCancelLiveCapture');
       const liveCaptureIdlePanel = document.getElementById('liveCaptureIdlePanel');
@@ -7434,13 +7549,33 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
             }
           }
 
-          // 6. MediaRecorder for continuous Opus chunking
+          // 6. Combine Screen Video AND Mixed Audio Tracks for Full Meeting Capture
           liveAudioChunks = [];
-          const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-            ? 'audio/webm;codecs=opus'
-            : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
 
-          liveMediaRecorder = new MediaRecorder(destination.stream, mimeType ? { mimeType } : undefined);
+          // Combine video track from screen share and audio tracks from mixerBus
+          const videoTracks = liveMediaStream.getVideoTracks();
+          const mixedAudioTracks = destination.stream.getAudioTracks();
+          const combinedRecordingStream = new MediaStream([...videoTracks, ...mixedAudioTracks]);
+
+          // Pick best supported video/audio recording container
+          let recMimeType = '';
+          const preferredMimes = [
+            'video/webm;codecs=vp9,opus',
+            'video/webm;codecs=vp8,opus',
+            'video/webm',
+            'video/mp4'
+          ];
+          for (const m of preferredMimes) {
+            if (MediaRecorder.isTypeSupported(m)) {
+              recMimeType = m;
+              break;
+            }
+          }
+          if (!recMimeType) {
+            recMimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
+          }
+
+          liveMediaRecorder = new MediaRecorder(combinedRecordingStream, recMimeType ? { mimeType: recMimeType } : undefined);
           liveMediaRecorder.ondataavailable = (e) => {
             if (e.data && e.data.size > 0) liveAudioChunks.push(e.data);
           };
@@ -7516,18 +7651,18 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
       }
 
       async function processRecordedMeeting() {
-        const mimeType = liveMediaRecorder?.mimeType || 'audio/webm';
+        const recordedMime = liveMediaRecorder?.mimeType || 'video/webm';
         cleanupLiveStreams();
         resetLiveCaptureUI();
 
         if (liveAudioChunks.length === 0) {
-          showToast('No audio data was recorded', 'warning');
+          showToast('No recording data was captured', 'warning');
           return;
         }
 
-        const audioBlob = new Blob(liveAudioChunks, { type: mimeType });
-        if (audioBlob.size < 1000) {
-          showToast('Recording was too short to transcribe', 'warning');
+        const mediaBlob = new Blob(liveAudioChunks, { type: recordedMime });
+        if (mediaBlob.size < 1000) {
+          showToast('Recording was too short to process', 'warning');
           return;
         }
 
@@ -7540,63 +7675,70 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
         };
         const pName = platformNames[activePlatform] || 'Live Meeting';
         
-        // Derive meeting title
-        let customTitle = `${pName} Live Sync (${timeStr})`;
+        // Derive meeting title & slug
+        let customTitle = `${pName} Recording (${timeStr})`;
+        let cleanSlug = 'meeting';
         if (activePlatform === 'google_meet' && meetUrlInput && meetUrlInput.value.trim()) {
-          customTitle = `Google Meet (${meetUrlInput.value.trim().slice(-12)})`;
+          const rawUrl = meetUrlInput.value.trim();
+          cleanSlug = rawUrl.replace(/[^a-zA-Z0-9-]/g, '').slice(-12) || 'google_meet';
+          customTitle = `Google Meet (${cleanSlug})`;
         } else if (activePlatform === 'zoom') {
           const mid = zoomMeetingId?.value?.trim() || zoomLinkInput?.value?.trim() || '';
-          if (mid) customTitle = `Zoom Sync (${mid.slice(-10)})`;
+          if (mid) {
+            cleanSlug = mid.replace(/[^a-zA-Z0-9-]/g, '').slice(-10);
+            customTitle = `Zoom Sync (${cleanSlug})`;
+          }
         }
 
-        const formData = new FormData();
-        formData.append('file', audioBlob, `${activePlatform}_live_copilot.webm`);
-        formData.append('title', customTitle);
-        formData.append('workspace_id', (typeof currentWorkspaceId !== 'undefined' ? currentWorkspaceId : null) || 'ws-engineering');
+        const isVideo = recordedMime.startsWith('video');
+        const fileExt = isVideo ? '.webm' : '.webm';
+        const fileName = `${activePlatform}_${cleanSlug}_${Date.now()}${fileExt}`;
+        const recordedFile = new File([mediaBlob], fileName, { type: mediaBlob.type });
 
-        progressOverlay.classList.add('active');
-        statusMessageText.textContent = 'Uploading live captured meeting audio…';
-        progressBarFill.style.width = '15%';
-
-        try {
-          const res = await fetch(`${API_BASE}/api/meetings/upload`, {
-            method: 'POST',
-            body: formData
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.detail || 'Processing failed');
-
-          const meetingId = data.meeting_id;
-          statusMessageText.textContent = 'Transcribing meeting speech with Faster-Whisper…';
-          progressBarFill.style.width = '45%';
-
-          if (eventSource) eventSource.close();
-          eventSource = new EventSource(`${API_BASE}/api/meetings/${meetingId}/status`);
-          eventSource.onmessage = (ev) => {
-            try {
-              const st = JSON.parse(ev.data);
-              const p = Math.max(10, Math.min(100, parseInt(st.progress || 10, 10)));
-              progressBarFill.style.width = `${p}%`;
-              progressPercentage.textContent = `${p}%`;
-              statusMessageText.textContent = st.message || `Processing ${st.stage}…`;
-
-              if (st.stage === 'done') {
-                eventSource.close();
-                btnRedirectNow.style.display = 'block';
-                btnRedirectNow.onclick = () => {
-                  window.location.href = getAppUrl(`readback.html?meeting=${encodeURIComponent(meetingId)}`);
-                };
-                setTimeout(() => {
-                  window.location.href = getAppUrl(`readback.html?meeting=${encodeURIComponent(meetingId)}`);
-                }, 1500);
-              }
-            } catch (e) {}
-          };
-        } catch (err) {
-          statusMessageText.textContent = `Error: ${err.message}`;
-          statusMessageText.style.color = '#ef4444';
-          showToast(err.message, 'error');
+        // ── Direct Handoff to "Upload Meeting Recording" (Card B) ──
+        if (typeof handleFile === 'function') {
+          handleFile(recordedFile);
+        } else {
+          selectedFile = recordedFile;
+          if (selectedFileName) selectedFileName.textContent = fileName;
+          if (selectedFileSize) selectedFileSize.textContent = formatBytes(recordedFile.size);
+          if (dropEmptyState) dropEmptyState.style.display = 'none';
+          if (fileSelectedBox) fileSelectedBox.style.display = 'flex';
         }
+
+        const selIcon = document.getElementById('selectedFileIcon');
+        if (selIcon) selIcon.textContent = isVideo ? '🎥' : '🎙️';
+
+        // Provide download link directly on Card B
+        const dlBtn = document.getElementById('btnDownloadRecording');
+        if (dlBtn) {
+          dlBtn.href = URL.createObjectURL(mediaBlob);
+          dlBtn.download = fileName;
+          dlBtn.style.display = 'inline-block';
+        }
+
+        // Pre-fill meeting title in upload card
+        const titleInput = document.getElementById('uploadMeetingTitle');
+        if (titleInput) {
+          titleInput.value = customTitle;
+        }
+
+        // Smooth scroll to Upload Meeting Recording card & glow highlight
+        const uploadCard = document.getElementById('uploadSectionCard');
+        if (uploadCard) {
+          uploadCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          uploadCard.classList.add('recording-handoff-pulse');
+          setTimeout(() => uploadCard.classList.remove('recording-handoff-pulse'), 4500);
+        }
+
+        showToast('🎉 Meeting finished! Screen video & audio loaded into Upload Pipeline. Auto-extracting in 2s…', 'success');
+
+        // Automatically trigger AI extraction pipeline after visual hand-off
+        setTimeout(() => {
+          if (btnProcessMeeting && selectedFile === recordedFile) {
+            btnProcessMeeting.click();
+          }
+        }, 2200);
       }
 
       if (btnStartLiveCapture) btnStartLiveCapture.addEventListener('click', startLiveMeetingCapture);
@@ -7750,9 +7892,11 @@ ${escapeHtml(data.answer)}`;
 
         const formData = new FormData();
         formData.append('file', selectedFile);
-        if (uploadMeetingTitle.value.trim()) {
+        if (uploadMeetingTitle && uploadMeetingTitle.value.trim()) {
           formData.append('title', uploadMeetingTitle.value.trim());
         }
+        const wsId = (typeof currentWorkspaceId !== 'undefined' ? currentWorkspaceId : null) || 'ws-engineering';
+        formData.append('workspace_id', wsId);
 
         progressOverlay.classList.add('active');
         statusMessageText.textContent = 'Uploading meeting recording…';
