@@ -5508,83 +5508,99 @@ Evidence verification links and audio citations are archived in Syncra Workplace
     </div>
   </div>
 
-  <!-- ── User Account Profile Modal ── -->
-  <div class="wp-modal-overlay" id="userAccountModal" style="display: none;">
-    <div class="wp-modal-box" style="max-width: 480px; text-align: left; padding: 26px 28px;">
-      <!-- Header with Close Button -->
+  <!-- ── User Account Profile Modal (Unified Clean Modern Template) ── -->
+  <div id="userAccountModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(24, 25, 27, 0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px; font-family: var(--font-main);">
+    <div style="background: #ffffff; border-radius: 28px; border: 1px solid #edf0ed; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.04); width: 100%; max-width: 480px; padding: 28px 30px; position: relative; animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; text-align: left;">
+      
+      <!-- Header with Icon & Close Button -->
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 1.25rem;">👤</span>
-          <span style="font-size: 16px; font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">User Account & Profile</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: #f4f6f4; border: 1px solid #e5e8e5; display: flex; align-items: center; justify-content: center; font-size: 1.15rem;">
+            👤
+          </div>
+          <div>
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-dark, #18191b); margin: 0; line-height: 1.2; letter-spacing: -0.02em;">Account &amp; Profile</h3>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 0; font-weight: 500;">Manage your identity, department &amp; preferences</p>
+          </div>
         </div>
-        <button type="button" onclick="closeAccountModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: color 0.15s;" title="Close (Esc)">✕</button>
+        <button type="button" onclick="closeAccountModal()" style="width: 34px; height: 34px; border-radius: 50%; background: #f4f6f4; border: 1px solid #e5e8e5; color: #64748b; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease;" title="Close (Esc)">✕</button>
       </div>
 
-      <!-- User Hero Card -->
-      <div style="display: flex; align-items: center; gap: 16px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 18px 20px; margin-bottom: 20px;">
-        <div id="accModalAvatar" style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #059669, #10b981); display: grid; place-items: center; font-size: 22px; font-weight: 800; color: #ffffff; border: 2px solid rgba(255, 255, 255, 0.2); flex-shrink: 0;">
+      <!-- User Profile Card -->
+      <div style="display: flex; align-items: center; gap: 16px; background: #f8faf8; border: 1px solid #e6eae6; border-radius: 22px; padding: 18px 20px; margin-bottom: 20px;">
+        <div id="accModalAvatar" style="width: 58px; height: 58px; border-radius: 50%; background: var(--dock-dark, #18191b); display: grid; place-items: center; font-size: 22px; font-weight: 800; color: #ffffff; border: 3px solid #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); flex-shrink: 0;">
           G
         </div>
         <div style="flex: 1; min-width: 0;">
-          <div id="accModalName" style="font-size: 17px; font-weight: 800; color: #ffffff; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          <div id="accModalName" style="font-size: 1.15rem; font-weight: 800; color: var(--text-dark, #18191b); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em;">
             Gaurav Chakotiya
           </div>
-          <div id="accModalEmail" style="font-size: 13px; color: #94a3b8; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          <div id="accModalEmail" style="font-size: 0.85rem; color: #64748b; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500;">
             gchakotiya@gmail.com
           </div>
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; background: rgba(5, 150, 105, 0.2); color: #34d399; border: 1px solid rgba(5, 150, 105, 0.4); padding: 2px 8px; border-radius: 9999px;">
+            <span style="display: inline-flex; align-items: center; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; background: #e5f97e; color: #18191b; border: 1px solid #def670; padding: 3px 9px; border-radius: 9999px;">
               Enterprise Pro
             </span>
-            <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 2px 8px; border-radius: 9999px;">
+            <span style="display: inline-flex; align-items: center; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; padding: 3px 9px; border-radius: 9999px;">
               Admin &amp; Host
             </span>
           </div>
         </div>
       </div>
 
-      <!-- Account Settings & Information -->
-      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; font-size: 13px;">
-          <span style="color: #94a3b8;">Active Department Workspace</span>
-          <span style="color: #f1f5f9; font-weight: 700;" id="accModalWorkspace">Engineering (Isolated)</span>
+      <!-- Account Settings & Workspace Details -->
+      <div style="display: flex; flex-direction: column; gap: 9px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; background: #ffffff; border: 1px solid #edf0ed; border-radius: 14px; font-size: 0.84rem;">
+          <span style="color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+            <span>🏢</span> Active Department
+          </span>
+          <span style="color: var(--text-dark, #18191b); font-weight: 700;" id="accModalWorkspace">Engineering (Isolated)</span>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; font-size: 13px;">
-          <span style="color: #94a3b8;">AI Intelligence Model</span>
-          <span style="color: #34d399; font-weight: 700;">Faster-Whisper + Ollama (qwen3:8b)</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; background: #ffffff; border: 1px solid #edf0ed; border-radius: 14px; font-size: 0.84rem;">
+          <span style="color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+            <span>⚡</span> AI Intelligence Model
+          </span>
+          <span style="color: #059669; font-weight: 700; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 9999px; font-size: 0.78rem;">Faster-Whisper + Ollama (qwen3:8b)</span>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; font-size: 13px;">
-          <span style="color: #94a3b8;">Cross-Device Encryption</span>
-          <span style="color: #38bdf8; font-weight: 700;">WebRTC DTLS-SRTP (Active)</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; background: #ffffff; border: 1px solid #edf0ed; border-radius: 14px; font-size: 0.84rem;">
+          <span style="color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+            <span>🔒</span> Cross-Device Security
+          </span>
+          <span style="color: #0284c7; font-weight: 700; background: #f0f9ff; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 9999px; font-size: 0.78rem;">WebRTC DTLS-SRTP (Active)</span>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <button type="button" onclick="editAccountProfile()" style="flex: 1; min-width: 120px; padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; background: #059669; color: #ffffff; border: none; cursor: pointer; transition: background 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-          <span>✏️</span> Edit Profile
+      <!-- Action Buttons Row -->
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <button type="button" onclick="editAccountProfile()" class="app-btn-primary" style="flex: 1; min-width: 130px; justify-content: center; padding: 10px 18px; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Edit Profile
         </button>
-        <a href="/app/login.html" style="flex: 1; min-width: 120px; padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; background: rgba(255, 255, 255, 0.08); color: #f1f5f9; border: 1px solid rgba(255, 255, 255, 0.15); text-decoration: none; cursor: pointer; transition: background 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-          <span>⇄</span> Switch Account
+        <a href="/app/login.html" class="app-btn-secondary" style="flex: 1; min-width: 130px; justify-content: center; padding: 10px 18px; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; text-decoration: none; cursor: pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+          Switch Account
         </a>
-        <button type="button" onclick="signOutAccount()" style="padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); cursor: pointer; transition: background 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-          <span>🚪</span> Sign Out
+        <button type="button" onclick="signOutAccount()" style="padding: 10px 16px; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
         </button>
       </div>
     </div>
   </div>
 
-  <div class="wp-modal-overlay" id="joinMeetingModal" style="display: none;">
-    <div class="wp-modal-box">
-      <div style="font-size:2rem;margin-bottom:8px;">📹</div>
-      <div class="wp-modal-title">Join a Meeting</div>
-      <div class="wp-modal-desc">Enter a Room ID or Meeting code to jump directly into the live WebRTC video room.</div>
+  <!-- ── Join Meeting Modal (Unified Clean Modern Template) ── -->
+  <div id="joinMeetingModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(24, 25, 27, 0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px; font-family: var(--font-main);">
+    <div style="background: #ffffff; border-radius: 28px; border: 1px solid #edf0ed; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.04); width: 100%; max-width: 440px; padding: 32px 28px; text-align: center; position: relative; animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
+      <div style="width: 54px; height: 54px; border-radius: 50%; background: #f4f6f4; border: 1px solid #e5e8e5; display: inline-flex; align-items: center; justify-content: center; font-size: 1.6rem; margin-bottom: 14px;">📹</div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-dark, #18191b); margin-bottom: 6px; letter-spacing: -0.02em;">Join a Meeting</h3>
+      <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 20px; line-height: 1.4;">Enter a Room ID or Meeting code to jump directly into the live WebRTC video room.</p>
       
-      <input type="text" class="wp-modal-input" id="joinMeetingInput" placeholder="e.g. 73ebc603-314c..." autocomplete="off">
+      <input type="text" id="joinMeetingInput" placeholder="e.g. 73ebc603-314c..." autocomplete="off" style="width: 100%; padding: 12px 16px; border-radius: 14px; border: 1px solid #cbd5e1; font-size: 0.95rem; font-family: var(--font-mono, monospace); outline: none; margin-bottom: 20px; text-align: center; background: #f8faf8; color: var(--text-dark, #18191b);">
       
-      <div class="wp-modal-actions">
-        <button type="button" class="wp-modal-btn-cancel" id="btnCancelJoinModal">Cancel</button>
-        <button type="button" class="wp-modal-btn-join" id="btnConfirmJoinModal">Join Now</button>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="app-btn-secondary" id="btnCancelJoinModal" style="flex: 1; justify-content: center;">Cancel</button>
+        <button type="button" class="app-btn-primary" id="btnConfirmJoinModal" style="flex: 1; justify-content: center;">Join Now</button>
       </div>
     </div>
   </div>
@@ -5856,14 +5872,29 @@ Evidence verification links and audio citations are archived in Syncra Workplace
       // ── Join Modal Handlers ──
       if (btnOpenJoinModal) {
         btnOpenJoinModal.addEventListener('click', () => {
-          if (joinMeetingModal) joinMeetingModal.classList.add('active');
+          if (joinMeetingModal) {
+            joinMeetingModal.style.display = 'flex';
+            joinMeetingModal.classList.add('active');
+          }
           if (joinMeetingInput) joinMeetingInput.focus();
         });
       }
 
       if (btnCancelJoinModal) {
         btnCancelJoinModal.addEventListener('click', () => {
-          if (joinMeetingModal) joinMeetingModal.classList.remove('active');
+          if (joinMeetingModal) {
+            joinMeetingModal.style.display = 'none';
+            joinMeetingModal.classList.remove('active');
+          }
+        });
+      }
+
+      if (joinMeetingModal) {
+        joinMeetingModal.addEventListener('click', (e) => {
+          if (e.target === joinMeetingModal) {
+            joinMeetingModal.style.display = 'none';
+            joinMeetingModal.classList.remove('active');
+          }
         });
       }
 
