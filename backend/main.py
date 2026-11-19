@@ -643,7 +643,16 @@ async def websocket_audio(ws: WebSocket, meeting_id: str):
             msg = await ws.receive()
 
             if "bytes" in msg and msg["bytes"]:
-                audio_buffer.extend(msg["bytes"])
+                raw_bytes = msg["bytes"]
+                audio_buffer.extend(raw_bytes)
+
+                # Persist raw chunks to master recording.webm for verifiable proof clips
+                rec_path = meeting_dir(meeting_id) / "recording.webm"
+                try:
+                    with open(rec_path, "ab") as f:
+                        f.write(raw_bytes)
+                except Exception as e:
+                    logger.debug("Live audio append warning: %s", e)
 
                 # Process when we have ~3 seconds of audio (48kHz stereo webm ≈ 24KB-48KB chunks)
                 if len(audio_buffer) >= 48000:
@@ -775,16 +784,59 @@ def _transcribe_chunk(chunk: bytes, meeting_id: str, id_offset: int, speaker_nam
     return result
 
 
+def _process_live_recording(meeting_id: str, segments: list) -> str | None:
+    """Convert accumulated live meeting audio (recording.webm) to 16kHz WAV and slice evidence clips."""
+    from .audio_store import meeting_dir, extract_clip
+    rec_path = meeting_dir(meeting_id) / "recording.webm"
+    wav_path = meeting_dir(meeting_id) / "audio.wav"
+
+    if not rec_path.exists() or rec_path.stat().st_size == 0:
+        logger.info("No audio recorded for live meeting %s", meeting_id)
+        return None
+
+    try:
+        import av
+        container = av.open(str(rec_path))
+        audio_stream = next((s for s in container.streams if s.type == "audio"), None)
+        if audio_stream:
+            resampler = av.AudioResampler(format="s16", layout="mono", rate=16000)
+            out_container = av.open(str(wav_path), mode="w", format="wav")
+            out_stream = out_container.add_stream("pcm_s16le", rate=16000)
+            for frame in container.decode(audio_stream):
+                for resampled_frame in resampler.resample(frame):
+                    for packet in out_stream.encode(resampled_frame):
+                        out_container.mux(packet)
+            for packet in out_stream.encode(None):
+                out_container.mux(packet)
+            out_container.close()
+            container.close()
+            logger.info("Successfully converted live recording %s -> %s", rec_path, wav_path)
+    except Exception as e:
+        logger.warning("Could not convert live recording via av: %s", e)
+
+    if wav_path.exists():
+        for seg in segments:
+            try:
+                extract_clip(wav_path, seg.id, seg.start, seg.end, meeting_id)
+            except Exception as e:
+                logger.debug("Live clip extraction for seg %s: %s", getattr(seg, 'id', '?'), e)
+        return str(wav_path)
+    return None
+
+
 async def _finalize_live_meeting(meeting_id: str, segments: list):
-    """Run extraction + evidence check on live meeting segments."""
+    """Run extraction + evidence check on live meeting segments and slice audio proof clips."""
     import asyncio
     loop = asyncio.get_event_loop()
+
+    # Step 1: Convert recording.webm -> audio.wav and extract audio clips for all segments
+    audio_wav = await loop.run_in_executor(None, _process_live_recording, meeting_id, segments)
 
     _set_status(meeting_id, "extracting", 60, "Extracting decisions…")
     items = await loop.run_in_executor(None, extract_items, segments, meeting_id)
     items = await loop.run_in_executor(None, verify_items, items, segments)
 
-    # Attach clip paths
+    # Step 2: Attach clip paths
     for item in items:
         for ev in item.evidence:
             clip = clip_path_absolute(meeting_id, ev.segment_id)
@@ -795,6 +847,8 @@ async def _finalize_live_meeting(meeting_id: str, segments: list):
     if raw:
         record = MeetingRecord.model_validate_json(raw)
         record.items = items
+        if audio_wav:
+            record.audio_path = audio_wav
         save_meeting_record(meeting_id, record.model_dump_json(indent=2))
 
     _set_status(meeting_id, "done", 100, "Ready for read-back")

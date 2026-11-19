@@ -1933,6 +1933,13 @@
           <span id="screen-label">Share Screen</span>
         </button>
 
+        <button class="control-btn" id="btn-record-session" title="Record meeting video or screen (for video proof)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="6" fill="#ef4444" stroke="#ef4444"></circle>
+          </svg>
+          <span id="record-session-label">Record Video</span>
+        </button>
+
         <button class="control-btn" id="btn-open-share" title="Share invite link with colleagues">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
@@ -3522,6 +3529,116 @@
         }
       }
 
+      // ── Step 9d: Full Session Video & Screen Recording ────────────────
+      let sessionMediaRecorder = null;
+      let sessionRecordedChunks = [];
+      let isSessionRecording = false;
+
+      async function toggleSessionRecording() {
+        const btnRecordSession = document.getElementById('btn-record-session');
+        const recordSessionLabel = document.getElementById('record-session-label');
+
+        if (!isSessionRecording) {
+          try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+              showToast('Screen/Video recording is supported on desktop browsers.', 'info');
+              return;
+            }
+            // Capture screen/tab video and system audio
+            const captureStream = await navigator.mediaDevices.getDisplayMedia({
+              video: { displaySurface: 'browser' },
+              audio: true
+            });
+
+            // If local microphone is active, mix it into the recording stream
+            let recordingStream = captureStream;
+            if (micStream && micStream.getAudioTracks().length > 0) {
+              try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                  const audioCtx = new AudioContextClass();
+                  const dest = audioCtx.createMediaStreamDestination();
+                  if (captureStream.getAudioTracks().length > 0) {
+                    const screenSource = audioCtx.createMediaStreamSource(new MediaStream([captureStream.getAudioTracks()[0]]));
+                    screenSource.connect(dest);
+                  }
+                  const micSource = audioCtx.createMediaStreamSource(micStream);
+                  micSource.connect(dest);
+                  recordingStream = new MediaStream([
+                    ...captureStream.getVideoTracks(),
+                    ...dest.stream.getAudioTracks()
+                  ]);
+                }
+              } catch (mixErr) {
+                console.warn('Audio mix for recording fallback:', mixErr);
+              }
+            }
+
+            sessionRecordedChunks = [];
+            const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+              ? 'video/webm;codecs=vp9'
+              : 'video/webm';
+            sessionMediaRecorder = new MediaRecorder(recordingStream, { mimeType });
+
+            sessionMediaRecorder.ondataavailable = (e) => {
+              if (e.data && e.data.size > 0) {
+                sessionRecordedChunks.push(e.data);
+              }
+            };
+
+            sessionMediaRecorder.onstop = () => {
+              if (sessionRecordedChunks.length > 0) {
+                const blob = new Blob(sessionRecordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `Syncra_Meeting_Recording_${(meetingId || 'session').substring(0, 8)}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                  document.body.removeChild(a);
+                  window.URL.revokeObjectURL(url);
+                }, 100);
+                showToast('🎬 Meeting video recording saved and downloaded!', 'success');
+              }
+              captureStream.getTracks().forEach(t => t.stop());
+            };
+
+            captureStream.getVideoTracks()[0].onended = () => {
+              if (isSessionRecording) toggleSessionRecording();
+            };
+
+            sessionMediaRecorder.start(1000);
+            isSessionRecording = true;
+            if (btnRecordSession) {
+              btnRecordSession.classList.add('active-control');
+              btnRecordSession.style.borderColor = '#ef4444';
+              btnRecordSession.style.color = '#ef4444';
+            }
+            if (recordSessionLabel) recordSessionLabel.textContent = 'Stop Recording';
+            showToast('🔴 Recording meeting video & audio for proof...', 'info');
+          } catch (err) {
+            if (err.name !== 'NotAllowedError') {
+              console.warn('Screen recording start error:', err);
+              showToast('Recording error: ' + (err.message || 'Permission denied'), 'danger');
+            }
+          }
+        } else {
+          // Stop recording
+          if (sessionMediaRecorder && sessionMediaRecorder.state !== 'inactive') {
+            try { sessionMediaRecorder.stop(); } catch (e) {}
+          }
+          isSessionRecording = false;
+          if (btnRecordSession) {
+            btnRecordSession.classList.remove('active-control');
+            btnRecordSession.style.borderColor = '';
+            btnRecordSession.style.color = '';
+          }
+          if (recordSessionLabel) recordSessionLabel.textContent = 'Record Video';
+        }
+      }
+
       // ── Step 10: Share Link Modal Handlers ───────────────────────────
       async function openShareModal() {
         let targetUrl = window.location.href;
@@ -3638,6 +3755,12 @@
         }
         peerConnections.clear();
 
+        // Stop Session Video Recording if active
+        if (isSessionRecording && sessionMediaRecorder && sessionMediaRecorder.state !== 'inactive') {
+          try { sessionMediaRecorder.stop(); } catch (e) {}
+          isSessionRecording = false;
+        }
+
         // Stop Local Recording & Media Streams
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           try { mediaRecorder.stop(); } catch (e) {}
@@ -3726,9 +3849,13 @@
         // Mic toggle
         btnToggleMic.addEventListener('click', toggleMute);
 
-        // Camera and Screen share toggle
+        // Camera, Screen share and Session Video recording toggle
         btnToggleCam.addEventListener('click', toggleCamera);
         btnToggleScreen.addEventListener('click', toggleScreenShare);
+        const btnRecSession = document.getElementById('btn-record-session');
+        if (btnRecSession) {
+          btnRecSession.addEventListener('click', toggleSessionRecording);
+        }
 
         // End meeting
         btnEndMeeting.addEventListener('click', (e) => {
