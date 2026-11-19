@@ -2702,9 +2702,6 @@
         updateParticipantsCount(msg.count);
         checkAndRenderWaitingCard();
       }
-          showToast(msg.message || 'Stream error occurred', 'danger');
-        }
-      }
 
       // ── Step 7: Transcript Feed Rendering ────────────────────────────
       function appendTranscriptSegment(data) {
@@ -3360,7 +3357,11 @@
       }
 
       // Start application lifecycle
-      window.addEventListener('DOMContentLoaded', init);
+      if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
 
     })();
   </script>
