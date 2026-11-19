@@ -195,6 +195,25 @@ async def root():
     return {"message": "Meeting Intelligence API", "docs": "/docs", "app": "/app"}
 
 
+@app.get("/api/network/info")
+async def get_network_info():
+    """Return local LAN IP and shareable URL for phones and other devices."""
+    import socket
+    lan_ip = "127.0.0.1"
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        lan_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        pass
+    return {
+        "lan_ip": lan_ip,
+        "port": 8000,
+        "shareable_url": f"http://{lan_ip}:8000"
+    }
+
+
 @app.get("/api/download/documentation")
 async def download_documentation():
     """Direct download endpoint for the comprehensive system documentation Word file."""

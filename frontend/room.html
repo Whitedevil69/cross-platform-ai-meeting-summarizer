@@ -1934,7 +1934,7 @@
         Send this link to team members. Anyone with the link can join the meeting and view live transcripts.
       </div>
 
-      <div class="modal-label">Join URL</div>
+      <div class="modal-label">Join URL (Mobile &amp; Network Shareable)</div>
       <div class="copy-url-container">
         <input type="text" id="share-url-input" class="copy-url-input" readonly>
         <button class="copy-action-btn" id="btn-copy-url">
@@ -1942,6 +1942,7 @@
           <span id="copy-btn-text">Copy</span>
         </button>
       </div>
+      <div style="font-size:0.72rem;color:#8b95a5;margin-top:-14px;margin-bottom:16px;">💡 Phones and tablets on your Wi-Fi join automatically via this network address.</div>
 
       <div class="modal-btn-row">
         <button class="modal-btn modal-btn-secondary" id="btn-done-share" style="width: 100%;">
@@ -3026,8 +3027,22 @@
       }
 
       // ── Step 10: Share Link Modal Handlers ───────────────────────────
-      function openShareModal() {
-        shareUrlInput.value = window.location.href;
+      async function openShareModal() {
+        let targetUrl = window.location.href;
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          try {
+            const netRes = await fetch('/api/network/info');
+            if (netRes.ok) {
+              const netData = await netRes.json();
+              if (netData.lan_ip && netData.lan_ip !== '127.0.0.1') {
+                targetUrl = targetUrl.replace(window.location.host, `${netData.lan_ip}:8000`);
+              }
+            }
+          } catch (e) {
+            console.warn('Could not auto-fetch LAN IP:', e);
+          }
+        }
+        shareUrlInput.value = targetUrl;
         modalShareLink.classList.add('active');
         copyBtnText.textContent = 'Copy';
         btnCopyUrl.classList.remove('copied');
