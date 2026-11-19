@@ -1801,68 +1801,191 @@
     .rm-btn-review { background: rgba(37, 99, 235, 0.12); color: #c4b5fd; border: 1px solid rgba(124, 58, 237, 0.3); }
     .rm-btn-delete { background: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.25); }
 
-    /* Progress Overlay */
+    /* ── Progress Overlay Modal (Unified Clean Management Template) ── */
     .progress-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(8, 8, 18, 0.9);
-      backdrop-filter: blur(24px);
-      z-index: 300;
+      background: rgba(24, 25, 27, 0.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 9999;
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 20px;
+      transition: opacity 0.25s ease;
     }
     .progress-overlay.active { display: flex !important; }
     .progress-modal {
       width: 100%;
-      max-width: 600px;
-      background: rgba(18, 18, 34, 0.98);
-      border: 1px solid rgba(124, 58, 237, 0.3);
-      border-radius: var(--radius-xl);
-      padding: 36px;
+      max-width: 520px;
+      background: #ffffff;
+      border: 1px solid #edf0ed;
+      border-radius: 28px;
+      padding: 38px 32px;
       text-align: center;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.16);
+      position: relative;
+      font-family: var(--font-main);
+      animation: modalPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalPopIn {
+      0% { opacity: 0; transform: scale(0.96) translateY(8px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
     }
     .modal-status-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 4px 14px;
-      border-radius: var(--radius-full);
-      background: rgba(124, 58, 237, 0.18);
-      border: 1px solid rgba(124, 58, 237, 0.35);
-      color: #c4b5fd;
-      font-size: 0.78rem;
-      margin-bottom: 14px;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      background: #f4f6f4;
+      border: 1px solid #e2e8e2;
+      color: #475569;
+      font-size: 0.76rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: 0.3px;
     }
-    .progress-title { font-size: 1.6rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
-    .progress-meeting-name { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 26px; }
+    .modal-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      display: inline-block;
+      animation: pulseGreen 1.5s infinite;
+    }
+    @keyframes pulseGreen {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .progress-title {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--text-dark);
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+    .progress-meeting-name {
+      font-size: 0.88rem;
+      color: #64748b;
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .progress-stage-steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+    .progress-stage-pill {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #f8faf8;
+      border: 1px solid #e5e8e5;
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+    .progress-stage-pill.active {
+      background: #eefdc4;
+      border-color: #d4ee60;
+      color: #18191b;
+      font-weight: 700;
+    }
+    .progress-stage-pill.done {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #065f46;
+    }
     .progress-bar-container {
-      background: rgba(0, 0, 0, 0.4);
-      border-radius: var(--radius-full);
-      padding: 3px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      margin-bottom: 16px;
+      background: #f1f4f1;
+      border-radius: 9999px;
+      height: 12px;
+      padding: 2px;
+      border: 1px solid #e2e8e2;
+      margin-bottom: 12px;
+      overflow: hidden;
+      position: relative;
     }
     .progress-bar-fill {
-      height: 10px;
-      border-radius: var(--radius-full);
-      background: linear-gradient(90deg, #2563eb, #0ea5e9, #10b981);
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #18191b 0%, #10b981 100%);
       width: 5%;
-      transition: width 0.35s ease;
+      transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
     }
-    .progress-meta-row { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 20px; }
+    .progress-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      margin-bottom: 22px;
+    }
     .btn-redirect-now {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      background: var(--dock-dark);
       color: #ffffff;
-      padding: 10px 20px;
-      border-radius: 10px;
+      padding: 12px 28px;
+      border-radius: 14px;
       border: none;
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 0.88rem;
       cursor: pointer;
       display: none;
       margin: 0 auto;
+      box-shadow: 0 4px 14px rgba(24, 25, 27, 0.25);
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+    .btn-redirect-now:hover {
+      background: #2b2d31;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(24, 25, 27, 0.35);
+    }
+
+    /* Dark Mode Support for Progress Modal */
+    .dark .progress-modal {
+      background: #18191b;
+      border-color: #2b2d31;
+      color: #f8fafc;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    }
+    .dark .progress-title { color: #ffffff; }
+    .dark .progress-meeting-name { color: #94a3b8; }
+    .dark .modal-status-badge {
+      background: #2b2d31;
+      border-color: #3f4247;
+      color: #cbd5e1;
+    }
+    .dark .progress-bar-container {
+      background: #2b2d31;
+      border-color: #3f4247;
+    }
+    .dark .progress-bar-fill {
+      background: linear-gradient(90deg, #e5f97e 0%, #10b981 100%);
+    }
+    .dark .progress-stage-pill {
+      background: #242629;
+      border-color: #35383d;
+      color: #94a3b8;
+    }
+    .dark .progress-stage-pill.active {
+      background: #363d1e;
+      border-color: #def670;
+      color: #e5f97e;
+    }
+    .dark .btn-redirect-now {
+      background: var(--highlight-lime);
+      color: #18191b;
     }
 
     /* Toasts */
@@ -5400,23 +5523,31 @@ Evidence verification links and audio citations are archived in Syncra Workplace
     </div>
   </div>
 
-  <!-- ── Progress Overlay Modal (Preserved for File Uploads) ── -->
+  <!-- ── Progress Overlay Modal (Unified Clean Management Template) ── -->
   <div class="progress-overlay" id="progressOverlay" role="dialog" aria-modal="true">
     <div class="progress-modal">
       <div class="modal-status-badge">
-        <span style="width:8px;height:8px;border-radius:50%;background:#2563eb;box-shadow:0 0 8px #2563eb;"></span>
-        <span id="overlayBadgeText">AI Pipeline Processing</span>
+        <span class="modal-pulse-dot"></span>
+        <span id="overlayBadgeText">AI Pipeline In Progress</span>
       </div>
       <h3 class="progress-title" id="progressTitle">Analyzing Meeting</h3>
-      <div class="progress-meeting-name" id="progressMeetingName">Meeting pipeline running…</div>
+      <div class="progress-meeting-name" id="progressMeetingName">Running speech recognition and extracting decision claims…</div>
+
+      <!-- Modern Stages Stepper -->
+      <div class="progress-stage-steps">
+        <span class="progress-stage-pill active" id="stgIngest"><span>📥</span> Ingest</span>
+        <span class="progress-stage-pill" id="stgAsr"><span>🎙️</span> Faster-Whisper</span>
+        <span class="progress-stage-pill" id="stgDiarize"><span>👥</span> Diarization</span>
+        <span class="progress-stage-pill" id="stgExtract"><span>🧠</span> AI Decisions</span>
+      </div>
 
       <div class="progress-bar-container">
         <div class="progress-bar-fill" id="progressBarFill"></div>
       </div>
 
       <div class="progress-meta-row">
-        <span id="statusMessageText" style="color:#38bdf8;font-family:var(--font-mono);">Processing audio chunks…</span>
-        <span id="progressPercentage" style="font-weight:700;color:#0c1c15;font-family:var(--font-mono);">5%</span>
+        <span id="statusMessageText" style="color:#475569;font-weight:600;font-family:var(--font-main);">Processing audio chunks…</span>
+        <span id="progressPercentage" style="font-weight:800;color:var(--text-dark);font-family:var(--font-mono);">5%</span>
       </div>
 
       <button type="button" class="btn-redirect-now" id="btnRedirectNow">
@@ -7926,9 +8057,30 @@ ${escapeHtml(data.answer)}`;
             try {
               const st = JSON.parse(ev.data);
               const p = Math.max(10, Math.min(100, parseInt(st.progress || 10, 10)));
-              progressBarFill.style.width = `${p}%`;
+progressBarFill.style.width = `${p}%`;
               progressPercentage.textContent = `${p}%`;
               statusMessageText.textContent = st.message || `Processing ${st.stage}…`;
+
+              // Update Stepper Pills
+              if (p >= 15) {
+                document.getElementById('stgIngest')?.classList.remove('active');
+                document.getElementById('stgIngest')?.classList.add('done');
+                document.getElementById('stgAsr')?.classList.add('active');
+              }
+              if (p >= 40) {
+                document.getElementById('stgAsr')?.classList.remove('active');
+                document.getElementById('stgAsr')?.classList.add('done');
+                document.getElementById('stgDiarize')?.classList.add('active');
+              }
+              if (p >= 60) {
+                document.getElementById('stgDiarize')?.classList.remove('active');
+                document.getElementById('stgDiarize')?.classList.add('done');
+                document.getElementById('stgExtract')?.classList.add('active');
+              }
+              if (p >= 95) {
+                document.getElementById('stgExtract')?.classList.remove('active');
+                document.getElementById('stgExtract')?.classList.add('done');
+              }
 
               if (st.stage === 'error') {
                 eventSource.close();
