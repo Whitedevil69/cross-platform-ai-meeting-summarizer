@@ -867,7 +867,18 @@
         flex-direction: row;
       }
       .ref-dock-bottom {
-        display: none;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        width: auto !important;
+      }
+      .ref-dock-avatar {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 0.85rem !important;
+      }
+      .ref-main-title {
+        font-size: 1.7rem !important;
       }
       .ref-three-cards-row {
         grid-template-columns: 1fr;
@@ -5687,7 +5698,7 @@ Evidence verification links and audio citations are archived in Syncra Workplace
     (function () {
       'use strict';
 
-      const API_BASE = (window.location.protocol.startsWith('http') && window.location.port === '8000') 
+      const API_BASE = (window.location.protocol.startsWith('http')) 
         ? '' 
         : 'http://localhost:8000';
 
@@ -6417,7 +6428,7 @@ Evidence verification links and audio citations are archived in Syncra Workplace
       let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Syncra Workplace//Calendar Engine//EN\n";
       syncraAppState.calendarEvents.forEach(ev => {
         const dateStr = `202611${ev.date < 10 ? '0' + ev.date : ev.date}`;
-        icsContent += `BEGIN:VEVENT\nSUMMARY:${ev.title}\nDTSTART:${dateStr}T100000Z\nDTEND:${dateStr}T110000Z\nDESCRIPTION:Syncra Workplace AI live meeting with real-time transcription and decision graph.\nLOCATION:http://localhost:8000/app/room.html?room=${ev.room}\nSTATUS:CONFIRMED\nEND:VEVENT\n`;
+        icsContent += `BEGIN:VEVENT\nSUMMARY:${ev.title}\nDTSTART:${dateStr}T100000Z\nDTEND:${dateStr}T110000Z\nDESCRIPTION:Syncra Workplace AI live meeting with real-time transcription and decision graph.\nLOCATION:${window.location.origin}/app/room.html?room=${ev.room}\nSTATUS:CONFIRMED\nEND:VEVENT\n`;
       });
       icsContent += "END:VCALENDAR";
 
@@ -8727,7 +8738,7 @@ progressBarFill.style.width = `${p}%`;
     // ══════════════════════════════════════════════════════════════════════
     // REAL MULTI-TENANT WORKSPACE ENGINE (SQLite Backed)
     // ══════════════════════════════════════════════════════════════════════
-    const API_BASE = (window.location.protocol.startsWith('http') && window.location.port === '8000') 
+    const API_BASE = (window.location.protocol.startsWith('http')) 
       ? '' 
       : 'http://localhost:8000';
     window.API_BASE = API_BASE;

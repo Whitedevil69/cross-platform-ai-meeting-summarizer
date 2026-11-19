@@ -656,8 +656,50 @@
 
   audio { display: none; }
 
-  @media (max-width: 640px) {
-    .finalize-footer { flex-direction: column; height: auto; padding: 14px 20px; text-align: center; }
+  @media (max-width: 768px) {
+    body {
+      padding: 0;
+    }
+    #app-container {
+      width: 100vw;
+      max-width: 100vw;
+      height: auto;
+      min-height: 100dvh;
+      margin: 0;
+      border-radius: 0;
+      border: none;
+      box-shadow: none;
+    }
+    header {
+      padding: 0 16px;
+      height: 64px;
+    }
+    .phase-badge {
+      display: none;
+    }
+    .header-actions span {
+      display: none;
+    }
+    .header-actions .action-btn {
+      padding: 8px;
+    }
+    .page-body {
+      padding: 16px 14px 100px;
+    }
+    .hero h1 {
+      font-size: 1.5rem;
+    }
+    .finalize-footer {
+      flex-direction: column;
+      height: auto;
+      padding: 12px 16px;
+      text-align: center;
+      gap: 10px;
+    }
+    .btn-finalize {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>
 </head>
@@ -759,7 +801,7 @@
 <audio id="audio-player"></audio>
 
 <script>
-const API = 'http://localhost:8000';
+const API = (window.location.protocol.startsWith('http')) ? '' : 'http://localhost:8000';
 const params = new URLSearchParams(location.search);
 const meetingId = params.get('meeting');
 
@@ -1182,8 +1224,9 @@ document.getElementById('btn-finalize').addEventListener('click', async () => {
 
 function playClip(path) {
   const player = document.getElementById('audio-player');
-  player.src = API + path;
-  player.play();
+  const base = (window.location.protocol.startsWith('http')) ? window.location.origin : 'http://localhost:8000';
+  player.src = base + path;
+  player.play().catch(e => console.warn('Audio play error:', e));
 }
 
 function escHtml(str) {
