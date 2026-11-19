@@ -5525,7 +5525,7 @@ Evidence verification links and audio citations are archived in Syncra Workplace
 
       let selectedFile = null;
       let eventSource = null;
-      let activePlatform = 'zoom';
+      let activePlatform = 'google_meet';
 
       // ── Helpers ──
       function showToast(msg, type = 'info') {
@@ -7213,21 +7213,30 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
       // Quick Launch Meet Button
       if (btnTestOpenMeet) {
         btnTestOpenMeet.addEventListener('click', () => {
-          const url = getMeetingLaunchUrl();
-          if (url) window.open(url, '_blank');
+          let val = meetUrlInput ? meetUrlInput.value.trim() : '';
+          if (!val) val = 'https://meet.google.com/new';
+          else if (!val.startsWith('http://') && !val.startsWith('https://')) {
+            val = `https://meet.google.com/${val.replace(/[^a-zA-Z0-9-]/g, '')}`;
+          }
+          window.open(val, '_blank');
+          showToast('🚀 Launching Google Meet in a new tab!', 'info');
         });
       }
 
       // Helper: calculate URL based on selected platform
       function getMeetingLaunchUrl() {
-        if (activePlatform === 'google_meet') {
+        // Read active platform directly from the active DOM pill first!
+        const activePill = document.querySelector('.ref-platform-pill.active');
+        const platform = activePill ? (activePill.dataset.platform || activePlatform) : activePlatform;
+
+        if (platform === 'google_meet') {
           let val = meetUrlInput ? meetUrlInput.value.trim() : '';
           if (!val) return 'https://meet.google.com/new';
           if (!val.startsWith('http://') && !val.startsWith('https://')) {
             val = `https://meet.google.com/${val.replace(/[^a-zA-Z0-9-]/g, '')}`;
           }
           return val;
-        } else if (activePlatform === 'zoom') {
+        } else if (platform === 'zoom') {
           if (zoomLinkView && zoomLinkView.style.display !== 'none') {
             const linkVal = zoomLinkInput ? zoomLinkInput.value.trim() : '';
             return linkVal || 'https://zoom.us/join';
@@ -7247,7 +7256,7 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
             if (pwd) url += `&pwd=${encodeURIComponent(pwd)}`;
             return url;
           }
-        } else if (activePlatform === 'teams') {
+        } else if (platform === 'teams') {
           const val = teamsMeetingId ? teamsMeetingId.value.trim() : '';
           const pwd = teamsPasscode ? teamsPasscode.value.trim() : '';
           if (!val) return 'https://teams.microsoft.com';
@@ -7384,34 +7393,46 @@ Next Best Action: Send SOC-2 packet and schedule security alignment.`;
             showToast('⚠️ No tab audio detected! Ensure "Also share tab audio" is checked in Chrome dialog.', 'warning');
           }
 
-          // 3. Audio Context & Destination Mixer
+          // 3. Audio Context & Master Mixer Bus (GainNode with input AND output!)
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
           liveAudioContext = new AudioContextClass();
-          const destination = liveAudioContext.createMediaStreamDestination();
-
-          if (audioTracks.length > 0) {
-            const displaySource = liveAudioContext.createMediaStreamSource(liveMediaStream);
-            displaySource.connect(destination);
+          if (liveAudioContext.state === 'suspended') {
+            await liveAudioContext.resume();
           }
 
-          // 4. Capture User Microphone
+          // Master mixer bus
+          const mixerBus = liveAudioContext.createGain();
+
+          // Destination stream for MediaRecorder
+          const destination = liveAudioContext.createMediaStreamDestination();
+
+          // Analyser for Real-Time Equalizer Waveform
+          liveAnalyser = liveAudioContext.createAnalyser();
+          liveAnalyser.fftSize = 32;
+
+          // Connect mixerBus to both destination (recording) and analyser (visualizer)
+          mixerBus.connect(destination);
+          mixerBus.connect(liveAnalyser);
+
+          // Feed Tab/Screen audio into mixer bus
+          if (audioTracks.length > 0) {
+            const displaySource = liveAudioContext.createMediaStreamSource(liveMediaStream);
+            displaySource.connect(mixerBus);
+          }
+
+          // Feed Microphone audio into mixer bus (if allowed by user & browser)
           if (chkIncludeMic && chkIncludeMic.checked) {
             try {
               liveMicStream = await navigator.mediaDevices.getUserMedia({
                 audio: { echoCancellation: true, noiseSuppression: true }
               });
               const micSource = liveAudioContext.createMediaStreamSource(liveMicStream);
-              micSource.connect(destination);
+              micSource.connect(mixerBus);
             } catch (micErr) {
               console.warn('Microphone permission not granted:', micErr);
               showToast('Microphone not included (recording tab audio only)', 'info');
             }
           }
-
-          // 5. Analyser for Real-Time Equalizer Waveform
-          liveAnalyser = liveAudioContext.createAnalyser();
-          liveAnalyser.fftSize = 32;
-          destination.connect(liveAnalyser);
 
           // 6. MediaRecorder for continuous Opus chunking
           liveAudioChunks = [];

@@ -16,6 +16,11 @@ Routes:
 """
 from __future__ import annotations
 
+import sys
+# Windows Application Control guard: avoid DLL block errors for optional accelerators
+sys.modules.setdefault("ujson", None)
+sys.modules.setdefault("orjson", None)
+
 import asyncio
 import io
 import json
