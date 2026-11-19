@@ -50,7 +50,7 @@ from fastapi import (
     UploadFile, WebSocket, WebSocketDisconnect,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -192,7 +192,7 @@ async def _run_pipeline(meeting_id: str, audio_path: Path, title: str | None, ow
 
 @app.get("/")
 async def root():
-    return {"message": "Meeting Intelligence API", "docs": "/docs", "app": "/app"}
+    return RedirectResponse(url="/app/")
 
 
 @app.get("/api/network/info")

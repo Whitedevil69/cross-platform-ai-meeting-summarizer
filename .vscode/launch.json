@@ -16,7 +16,12 @@
       ],
       "jinja": true,
       "justMyCode": true,
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "serverReadyAction": {
+        "pattern": "Application startup complete",
+        "uriFormat": "http://localhost:8000/app/",
+        "action": "openExternally"
+      }
     },
     {
       "name": "▶ System Health Check (doctor.py)",
