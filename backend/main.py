@@ -466,23 +466,144 @@ async def get_room_token(meeting_id: str, name: str):
     }
 
 
-# ── WebSocket — live audio processing ────────────────────────────────────────
+# ── WebSocket — live audio processing & Room Presence ───────────────────────
+
+class RoomConnectionManager:
+    def __init__(self):
+        # meeting_id -> {
+        #   "clients": {client_id: {"ws": WebSocket, "name": str, "is_host": bool}},
+        #   "segments": list[Segment],
+        #   "seg_counter": int
+        # }
+        self.rooms: dict[str, dict] = {}
+        self._lock = asyncio.Lock()
+
+    def _ensure_room(self, meeting_id: str) -> dict:
+        if meeting_id not in self.rooms:
+            self.rooms[meeting_id] = {
+                "clients": {},
+                "segments": [],
+                "seg_counter": 0,
+            }
+        return self.rooms[meeting_id]
+
+    async def connect(self, meeting_id: str, client_id: str, name: str, ws: WebSocket):
+        async with self._lock:
+            room = self._ensure_room(meeting_id)
+            is_host = len(room["clients"]) == 0
+            room["clients"][client_id] = {
+                "ws": ws,
+                "name": name,
+                "is_host": is_host,
+            }
+        logger.info(
+            "WS client %s (%s) connected to meeting %s (total in room: %d)",
+            client_id, name, meeting_id, len(self.rooms.get(meeting_id, {}).get("clients", {}))
+        )
+        await self.broadcast_presence(meeting_id)
+
+    async def disconnect(self, meeting_id: str, client_id: str):
+        async with self._lock:
+            if meeting_id in self.rooms:
+                room = self.rooms[meeting_id]
+                if client_id in room["clients"]:
+                    del room["clients"][client_id]
+        logger.info("WS client %s disconnected from meeting %s", client_id, meeting_id)
+        await self.broadcast_presence(meeting_id)
+
+    def get_participants(self, meeting_id: str) -> list[dict]:
+        if meeting_id not in self.rooms:
+            return []
+        room = self.rooms[meeting_id]
+        return [
+            {
+                "client_id": cid,
+                "name": info["name"],
+                "is_host": info["is_host"],
+            }
+            for cid, info in room["clients"].items()
+        ]
+
+    def add_segments(self, meeting_id: str, segs: list) -> int:
+        room = self._ensure_room(meeting_id)
+        room["segments"].extend(segs)
+        room["seg_counter"] += len(segs)
+        return room["seg_counter"]
+
+    def get_segments(self, meeting_id: str) -> list:
+        if meeting_id not in self.rooms:
+            return []
+        return list(self.rooms[meeting_id]["segments"])
+
+    def get_seg_counter(self, meeting_id: str) -> int:
+        if meeting_id not in self.rooms:
+            return 0
+        return self.rooms[meeting_id]["seg_counter"]
+
+    async def broadcast_presence(self, meeting_id: str):
+        participants = self.get_participants(meeting_id)
+        msg = {
+            "type": "presence",
+            "meeting_id": meeting_id,
+            "count": len(participants),
+            "participants": participants,
+        }
+        await self.broadcast(meeting_id, msg)
+
+    async def broadcast_speaking(self, meeting_id: str, client_id: str, is_speaking: bool):
+        msg = {
+            "type": "speaker_activity",
+            "client_id": client_id,
+            "is_speaking": is_speaking,
+        }
+        await self.broadcast(meeting_id, msg, exclude_client_id=client_id)
+
+    async def broadcast_segment(self, meeting_id: str, segment_data: dict):
+        msg = {
+            "type": "segment",
+            "data": segment_data,
+        }
+        await self.broadcast(meeting_id, msg)
+
+    async def broadcast(self, meeting_id: str, message: dict, exclude_client_id: str | None = None):
+        if meeting_id not in self.rooms:
+            return
+        room = self.rooms[meeting_id]
+        dead_clients = []
+        payload = json.dumps(message)
+        for cid, info in list(room["clients"].items()):
+            if exclude_client_id and cid == exclude_client_id:
+                continue
+            try:
+                await info["ws"].send_text(payload)
+            except Exception as e:
+                logger.warning("Failed to send WS message to client %s: %s", cid, e)
+                dead_clients.append(cid)
+        for dc in dead_clients:
+            await self.disconnect(meeting_id, dc)
+
+
+room_manager = RoomConnectionManager()
+
 
 @app.websocket("/ws/room/{meeting_id}")
 async def websocket_audio(ws: WebSocket, meeting_id: str):
     """
     Receive raw audio chunks from browser (PCM/WebM), transcribe with Whisper,
-    and stream back transcript segments in real time.
-    Audio is also accumulated for final pipeline run when room ends.
+    and broadcast transcript segments in real time to all room participants.
+    Also tracks room presence (multi-device participants) and speaker activity.
     """
     await ws.accept()
     from .asr import _get_model
     from .meeting_record import Segment
 
-    logger.info("WS connected: meeting %s", meeting_id)
+    # Parse query params for client identification
+    params = ws.query_params
+    client_id = params.get("client_id") or str(uuid.uuid4())
+    name = params.get("name") or "Participant"
+
+    await room_manager.connect(meeting_id, client_id, name, ws)
     audio_buffer = bytearray()
-    segments_all: list[Segment] = []
-    seg_id_counter = 0
 
     try:
         while True:
@@ -491,25 +612,23 @@ async def websocket_audio(ws: WebSocket, meeting_id: str):
             if "bytes" in msg and msg["bytes"]:
                 audio_buffer.extend(msg["bytes"])
 
-                # Process when we have ~3 seconds of audio (48kHz stereo webm ≈ 24KB chunks)
+                # Process when we have ~3 seconds of audio (48kHz stereo webm ≈ 24KB-48KB chunks)
                 if len(audio_buffer) >= 48000:
                     chunk = bytes(audio_buffer)
                     audio_buffer.clear()
 
-                    # Write to temp file, transcribe
+                    current_counter = room_manager.get_seg_counter(meeting_id)
                     loop = asyncio.get_event_loop()
                     segs = await loop.run_in_executor(
-                        None, _transcribe_chunk, chunk, meeting_id, seg_id_counter
+                        None, _transcribe_chunk, chunk, meeting_id, current_counter, name
                     )
-                    seg_id_counter += len(segs)
-                    segments_all.extend(segs)
-
-                    # Stream back to client
-                    for seg in segs:
-                        await ws.send_text(json.dumps({
-                            "type": "segment",
-                            "data": seg.model_dump(),
-                        }))
+                    if segs:
+                        room_manager.add_segments(meeting_id, segs)
+                        for seg in segs:
+                            seg_dict = seg.model_dump()
+                            if not seg_dict.get("speaker"):
+                                seg_dict["speaker"] = name
+                            await room_manager.broadcast_segment(meeting_id, seg_dict)
 
             elif "text" in msg:
                 try:
@@ -517,35 +636,50 @@ async def websocket_audio(ws: WebSocket, meeting_id: str):
                 except Exception:
                     continue
 
-                if data.get("type") == "end_meeting":
-                    # Run full extraction pipeline on accumulated audio
-                    await ws.send_text(json.dumps({"type": "status", "message": "Processing meeting…"}))
-                    # Save accumulated segments to record
+                mtype = data.get("type")
+                if mtype == "speaking":
+                    is_speaking = bool(data.get("is_speaking", False))
+                    await room_manager.broadcast_speaking(meeting_id, client_id, is_speaking)
+
+                elif mtype == "update_name":
+                    new_name = data.get("name", "").strip()
+                    if new_name and meeting_id in room_manager.rooms:
+                        room = room_manager.rooms[meeting_id]
+                        if client_id in room["clients"]:
+                            room["clients"][client_id]["name"] = new_name
+                            name = new_name
+                            await room_manager.broadcast_presence(meeting_id)
+
+                elif mtype == "end_meeting":
+                    all_segments = room_manager.get_segments(meeting_id)
+                    await room_manager.broadcast(meeting_id, {
+                        "type": "status",
+                        "message": "Processing meeting decisions & evidence…"
+                    })
+
                     raw = load_meeting_record(meeting_id)
                     if raw:
                         record = MeetingRecord.model_validate_json(raw)
-                        record.segments = segments_all
+                        record.segments = all_segments
                         save_meeting_record(meeting_id, record.model_dump_json(indent=2))
 
-                    # Run extraction + evidence in background
-                    asyncio.create_task(_finalize_live_meeting(meeting_id, segments_all))
-                    await ws.send_text(json.dumps({
+                    asyncio.create_task(_finalize_live_meeting(meeting_id, all_segments))
+                    readback_url = f"/app/readback.html?meeting={meeting_id}"
+                    await room_manager.broadcast(meeting_id, {
                         "type": "pipeline_started",
-                        "readback_url": f"/app/readback.html?meeting={meeting_id}",
-                    }))
+                        "readback_url": readback_url,
+                    })
                     break
 
     except WebSocketDisconnect:
-        logger.info("WS disconnected: meeting %s", meeting_id)
+        logger.info("WS disconnected: meeting %s, client %s", meeting_id, client_id)
     except Exception as e:
         logger.error("WS error: %s", e)
-        try:
-            await ws.send_text(json.dumps({"type": "error", "message": str(e)}))
-        except Exception:
-            pass
+    finally:
+        await room_manager.disconnect(meeting_id, client_id)
 
 
-def _transcribe_chunk(chunk: bytes, meeting_id: str, id_offset: int) -> list:
+def _transcribe_chunk(chunk: bytes, meeting_id: str, id_offset: int, speaker_name: str = "Participant") -> list:
     """Transcribe a raw audio chunk (runs in thread pool)."""
     import tempfile
     from .asr import _get_model
@@ -571,11 +705,15 @@ def _transcribe_chunk(chunk: bytes, meeting_id: str, id_offset: int) -> list:
                 start=round(raw.start, 3),
                 end=round(raw.end, 3),
                 text=raw.text.strip(),
-                language=raw.language or info.language,
+                speaker=speaker_name,
+                language=getattr(raw, 'language', None) or info.language,
             )
             result.append(seg)
     finally:
-        os.unlink(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
 
     return result
 

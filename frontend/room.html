@@ -2032,6 +2032,11 @@
       // Accumulator for transcripts
       const transcriptSegments = [];
 
+      // Multi-device WebSocket presence & identity state
+      const myClientId = 'user_' + Math.random().toString(36).substring(2, 10);
+      let wsParticipants = new Map(); // client_id -> { client_id, name, is_host }
+      let lastSentSpeakingState = false;
+
       // ── DOM Element References ───────────────────────────────────────
       const roomTitleEl = document.getElementById('room-title');
       const meetingIdBadge = document.getElementById('meeting-id-badge');
@@ -2189,6 +2194,8 @@
         fetchMeetingTitle(meetingId);
 
         // 2. Resolve Participant Name
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
         if (params.name && params.name.trim()) {
           participantName = params.name.trim();
           localStorage.setItem('user_name', participantName);
@@ -2198,11 +2205,20 @@
           const storedEmail = localStorage.getItem('user_email');
           if (storedName && storedName.trim()) {
             participantName = storedName.trim();
+            if (isMobile && !participantName.toLowerCase().includes('mobile')) {
+              participantName = `${participantName} (Mobile)`;
+            }
             showConsentModal();
           } else if (storedEmail && storedEmail.trim()) {
             participantName = storedEmail.split('@')[0];
+            if (isMobile && !participantName.toLowerCase().includes('mobile')) {
+              participantName = `${participantName} (Mobile)`;
+            }
             showConsentModal();
           } else {
+            if (isMobile) {
+              inputUserName.value = 'Colleague (Mobile)';
+            }
             showNameModal();
           }
         }
@@ -2465,7 +2481,7 @@
         try {
           const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
           const wsHost = window.location.host || 'localhost:8000';
-          const wsUrl = `${wsProtocol}//${wsHost}/ws/room/${encodeURIComponent(meetingId)}`;
+          const wsUrl = `${wsProtocol}//${wsHost}/ws/room/${encodeURIComponent(meetingId)}?client_id=${encodeURIComponent(myClientId)}&name=${encodeURIComponent(participantName)}`;
 
           audioWs = new WebSocket(wsUrl);
           audioWs.binaryType = 'arraybuffer';
@@ -2600,6 +2616,13 @@
             // If audio volume exceeds speaking threshold
             const speakingNow = average > 24;
             setTileSpeaking('local-participant', speakingNow);
+
+            if (audioWs && audioWs.readyState === WebSocket.OPEN && speakingNow !== lastSentSpeakingState) {
+              lastSentSpeakingState = speakingNow;
+              try {
+                audioWs.send(JSON.stringify({ type: 'speaking', is_speaking: speakingNow }));
+              } catch (e) {}
+            }
           }
 
           updateVisualizer();
@@ -2612,7 +2635,11 @@
       function handleIncomingWsMessage(msg) {
         if (!msg || !msg.type) return;
 
-        if (msg.type === 'segment') {
+        if (msg.type === 'presence') {
+          handlePresenceUpdate(msg);
+        } else if (msg.type === 'speaker_activity') {
+          setTileSpeaking(msg.client_id, !!msg.is_speaking);
+        } else if (msg.type === 'segment') {
           // New transcript segment received!
           appendTranscriptSegment(msg.data);
         } else if (msg.type === 'pipeline_started') {
@@ -2622,6 +2649,59 @@
         } else if (msg.type === 'status') {
           showToast(msg.message || 'Processing…', 'info');
         } else if (msg.type === 'error') {
+          showToast(msg.message || 'Stream error occurred', 'danger');
+        }
+      }
+
+      function handlePresenceUpdate(msg) {
+        if (!msg || !Array.isArray(msg.participants)) return;
+
+        const currentRemoteIds = new Set();
+
+        msg.participants.forEach(p => {
+          if (p.client_id === myClientId) {
+            // Local user
+            return;
+          }
+          currentRemoteIds.add(p.client_id);
+
+          if (!wsParticipants.has(p.client_id)) {
+            // New remote participant joined!
+            wsParticipants.set(p.client_id, p);
+            renderParticipantTile({
+              identity: p.client_id,
+              name: p.name || 'Participant',
+              isLocal: false,
+              isSpeaking: false,
+              isMuted: false
+            });
+            showToast(`${p.name || 'A participant'} joined the meeting`, 'info');
+          } else {
+            // Participant already rendered; update name if changed
+            const existing = wsParticipants.get(p.client_id);
+            if (existing && existing.name !== p.name) {
+              existing.name = p.name;
+              const tile = document.getElementById(`tile-${p.client_id}`);
+              if (tile) {
+                const nameEl = tile.querySelector('.participant-name');
+                if (nameEl) nameEl.textContent = p.name;
+              }
+            }
+          }
+        });
+
+        // Remove participants who disconnected
+        wsParticipants.forEach((p, cid) => {
+          if (!currentRemoteIds.has(cid)) {
+            removeParticipantTile(cid);
+            wsParticipants.delete(cid);
+            showToast(`${p.name || 'A participant'} left the meeting`, 'info');
+          }
+        });
+
+        updateParticipantsCount(msg.count);
+        checkAndRenderWaitingCard();
+      }
           showToast(msg.message || 'Stream error occurred', 'danger');
         }
       }
@@ -2767,6 +2847,25 @@
 
         if (isLocal) {
           tile.querySelector(`#tile-mic-${identity}`).addEventListener('click', toggleMute);
+          const nameEl = tile.querySelector('.participant-name');
+          if (nameEl) {
+            nameEl.style.cursor = 'pointer';
+            nameEl.title = 'Click to edit your display name';
+            nameEl.addEventListener('click', () => {
+              const newName = prompt('Enter your display name:', participantName);
+              if (newName && newName.trim()) {
+                participantName = newName.trim();
+                localStorage.setItem('user_name', participantName);
+                nameEl.textContent = participantName;
+                const initials = getInitials(participantName);
+                const avEl = tile.querySelector('.participant-avatar');
+                if (avEl) avEl.textContent = initials;
+                if (audioWs && audioWs.readyState === WebSocket.OPEN) {
+                  audioWs.send(JSON.stringify({ type: 'update_name', name: participantName }));
+                }
+              }
+            });
+          }
           if (localVideoStream) {
             const vid = tile.querySelector(`#video-${identity}`);
             if (vid) {
@@ -2856,9 +2955,11 @@
         }
       }
 
-      function updateParticipantsCount() {
-        const total = 1 + livekitParticipants.size;
-        participantsCountText.textContent = `Participants: ${total}`;
+      function updateParticipantsCount(explicitCount) {
+        const total = explicitCount !== undefined ? explicitCount : (1 + livekitParticipants.size + wsParticipants.size);
+        if (participantsCountText) {
+          participantsCountText.textContent = `Participants: ${total}`;
+        }
       }
 
       // ── Step 9: Audio Mute / Unmute Toggle ────────────────────────────
@@ -3056,6 +3157,11 @@
             console.warn('Could not auto-fetch LAN IP:', e);
           }
         }
+        try {
+          const shareUrlObj = new URL(targetUrl);
+          shareUrlObj.searchParams.delete('name');
+          targetUrl = shareUrlObj.toString();
+        } catch (e) {}
         shareUrlInput.value = targetUrl;
         modalShareLink.classList.add('active');
         copyBtnText.textContent = 'Copy';
