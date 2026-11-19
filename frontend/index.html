@@ -1813,7 +1813,7 @@
       justify-content: center;
       padding: 24px;
     }
-    .progress-overlay.active { display: flex; }
+    .progress-overlay.active { display: flex !important; }
     .progress-modal {
       width: 100%;
       max-width: 600px;
@@ -5401,7 +5401,7 @@ Evidence verification links and audio citations are archived in Syncra Workplace
   </div>
 
   <!-- ── Progress Overlay Modal (Preserved for File Uploads) ── -->
-  <div class="progress-overlay" id="progressOverlay" style="display: none;" role="dialog" aria-modal="true">
+  <div class="progress-overlay" id="progressOverlay" role="dialog" aria-modal="true">
     <div class="progress-modal">
       <div class="modal-status-badge">
         <span style="width:8px;height:8px;border-radius:50%;background:#2563eb;box-shadow:0 0 8px #2563eb;"></span>
@@ -7890,6 +7890,9 @@ ${escapeHtml(data.answer)}`;
           return;
         }
 
+        btnProcessMeeting.disabled = true;
+        btnProcessMeeting.innerHTML = '<span>⏳ Uploading &amp; Extracting…</span>';
+
         const formData = new FormData();
         formData.append('file', selectedFile);
         if (uploadMeetingTitle && uploadMeetingTitle.value.trim()) {
@@ -7898,8 +7901,10 @@ ${escapeHtml(data.answer)}`;
         const wsId = (typeof currentWorkspaceId !== 'undefined' ? currentWorkspaceId : null) || 'ws-engineering';
         formData.append('workspace_id', wsId);
 
+        progressOverlay.style.display = 'flex';
         progressOverlay.classList.add('active');
         statusMessageText.textContent = 'Uploading meeting recording…';
+        statusMessageText.style.color = '#38bdf8';
         progressBarFill.style.width = '15%';
 
         try {
@@ -7911,7 +7916,7 @@ ${escapeHtml(data.answer)}`;
           if (!res.ok) throw new Error(data.detail || 'Upload failed');
 
           const meetingId = data.meeting_id;
-          statusMessageText.textContent = 'Transcribing Hindi & English speech…';
+          statusMessageText.textContent = 'Transcribing meeting speech with Faster-Whisper…';
           progressBarFill.style.width = '45%';
 
           // Connect SSE status
@@ -7925,7 +7930,14 @@ ${escapeHtml(data.answer)}`;
               progressPercentage.textContent = `${p}%`;
               statusMessageText.textContent = st.message || `Processing ${st.stage}…`;
 
-              if (st.stage === 'done') {
+              if (st.stage === 'error') {
+                eventSource.close();
+                statusMessageText.textContent = `Pipeline error: ${st.message || 'Processing failed'}`;
+                statusMessageText.style.color = '#ef4444';
+                showToast(`Error: ${st.message || 'Processing failed'}`, 'error');
+                btnProcessMeeting.disabled = false;
+                btnProcessMeeting.innerHTML = '<span>⚡ Retry Extraction</span>';
+              } else if (st.stage === 'done') {
                 eventSource.close();
                 btnRedirectNow.style.display = 'block';
                 btnRedirectNow.onclick = () => {
@@ -7941,6 +7953,8 @@ ${escapeHtml(data.answer)}`;
           statusMessageText.textContent = `Error: ${err.message}`;
           statusMessageText.style.color = '#ef4444';
           showToast(err.message, 'error');
+          btnProcessMeeting.disabled = false;
+          btnProcessMeeting.innerHTML = '<span>⚡ Extract &amp; Process Evidence</span>';
         }
       });
 

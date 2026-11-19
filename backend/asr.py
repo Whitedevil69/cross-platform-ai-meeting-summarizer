@@ -10,6 +10,15 @@ import logging
 from pathlib import Path
 from typing import Generator
 
+import av
+# PyAV 14.0+ compatibility: faster_whisper passes metadata_errors='ignore' which PyAV 14+ removed
+_orig_av_open = getattr(av, "open", None)
+if _orig_av_open:
+    def _safe_av_open(*args, **kwargs):
+        kwargs.pop("metadata_errors", None)
+        return _orig_av_open(*args, **kwargs)
+    av.open = _safe_av_open
+
 from faster_whisper import WhisperModel
 
 from .meeting_record import Segment
@@ -64,7 +73,7 @@ def transcribe(
             start=round(raw.start, 3),
             end=round(raw.end, 3),
             text=raw.text.strip(),
-            language=raw.language or info.language,
+            language=getattr(raw, "language", None) or info.language,
         )
         # Extract clip for evidence playback
         try:

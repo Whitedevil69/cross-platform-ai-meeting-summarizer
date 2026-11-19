@@ -21,6 +21,15 @@ import sys
 sys.modules.setdefault("ujson", None)
 sys.modules.setdefault("orjson", None)
 
+import av
+# PyAV 14.0+ compatibility: faster_whisper passes metadata_errors='ignore' which PyAV 14+ removed
+_orig_av_open = getattr(av, "open", None)
+if _orig_av_open:
+    def _safe_av_open(*args, **kwargs):
+        kwargs.pop("metadata_errors", None)
+        return _orig_av_open(*args, **kwargs)
+    av.open = _safe_av_open
+
 import asyncio
 import io
 import json
