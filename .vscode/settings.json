@@ -1,0 +1,12 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\Gaurav\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "files.associations": {
+    "*.html": "html",
+    "*.py": "python"
+  },
+  "editor.formatOnSave": false,
+  "editor.tabSize": 2,
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.typeCheckingMode": "basic"
+}
