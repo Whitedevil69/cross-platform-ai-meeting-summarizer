@@ -3390,8 +3390,8 @@
 
       <div class="ref-dock-bottom">
         <!-- User Avatar -->
-        <div class="ref-dock-avatar" onclick="openAppSuiteModal('Contacts')" title="User Profile">
-          <span>G</span>
+        <div class="ref-dock-avatar" onclick="openAccountModal()" title="View Account & Profile" style="cursor: pointer;">
+          <span id="dockAvatarLetter">G</span>
         </div>
       </div>
     </aside>
@@ -5508,6 +5508,72 @@ Evidence verification links and audio citations are archived in Syncra Workplace
     </div>
   </div>
 
+  <!-- ── User Account Profile Modal ── -->
+  <div class="wp-modal-overlay" id="userAccountModal" style="display: none;">
+    <div class="wp-modal-box" style="max-width: 480px; text-align: left; padding: 26px 28px;">
+      <!-- Header with Close Button -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.25rem;">👤</span>
+          <span style="font-size: 16px; font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">User Account & Profile</span>
+        </div>
+        <button type="button" onclick="closeAccountModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: color 0.15s;" title="Close (Esc)">✕</button>
+      </div>
+
+      <!-- User Hero Card -->
+      <div style="display: flex; align-items: center; gap: 16px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 18px 20px; margin-bottom: 20px;">
+        <div id="accModalAvatar" style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #059669, #10b981); display: grid; place-items: center; font-size: 22px; font-weight: 800; color: #ffffff; border: 2px solid rgba(255, 255, 255, 0.2); flex-shrink: 0;">
+          G
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div id="accModalName" style="font-size: 17px; font-weight: 800; color: #ffffff; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            Gaurav Chakotiya
+          </div>
+          <div id="accModalEmail" style="font-size: 13px; color: #94a3b8; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            gchakotiya@gmail.com
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; background: rgba(5, 150, 105, 0.2); color: #34d399; border: 1px solid rgba(5, 150, 105, 0.4); padding: 2px 8px; border-radius: 9999px;">
+              Enterprise Pro
+            </span>
+            <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 2px 8px; border-radius: 9999px;">
+              Admin &amp; Host
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Settings & Information -->
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; font-size: 13px;">
+          <span style="color: #94a3b8;">Active Department Workspace</span>
+          <span style="color: #f1f5f9; font-weight: 700;" id="accModalWorkspace">Engineering (Isolated)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; font-size: 13px;">
+          <span style="color: #94a3b8;">AI Intelligence Model</span>
+          <span style="color: #34d399; font-weight: 700;">Faster-Whisper + Ollama (qwen3:8b)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; font-size: 13px;">
+          <span style="color: #94a3b8;">Cross-Device Encryption</span>
+          <span style="color: #38bdf8; font-weight: 700;">WebRTC DTLS-SRTP (Active)</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button type="button" onclick="editAccountProfile()" style="flex: 1; min-width: 120px; padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; background: #059669; color: #ffffff; border: none; cursor: pointer; transition: background 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <span>✏️</span> Edit Profile
+        </button>
+        <a href="/app/login.html" style="flex: 1; min-width: 120px; padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; background: rgba(255, 255, 255, 0.08); color: #f1f5f9; border: 1px solid rgba(255, 255, 255, 0.15); text-decoration: none; cursor: pointer; transition: background 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <span>⇄</span> Switch Account
+        </a>
+        <button type="button" onclick="signOutAccount()" style="padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); cursor: pointer; transition: background 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <span>🚪</span> Sign Out
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="wp-modal-overlay" id="joinMeetingModal" style="display: none;">
     <div class="wp-modal-box">
       <div style="font-size:2rem;margin-bottom:8px;">📹</div>
@@ -5703,25 +5769,89 @@ Evidence verification links and audio citations are archived in Syncra Workplace
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
       }
 
-      // ── User Account Init ──
+      // ── User Account Init & Profile Management ──
       function initUserAccount() {
-        const storedEmail = localStorage.getItem('user_email');
-        if (storedEmail) {
-          if (displayUserEmail) displayUserEmail.textContent = storedEmail;
-          if (avatarLetter) avatarLetter.textContent = storedEmail.charAt(0).toUpperCase();
-        } else {
-          if (displayUserEmail) displayUserEmail.textContent = 'gchakotiya@gmail.com';
-          if (avatarLetter) avatarLetter.textContent = 'G';
-        }
+        const storedName = localStorage.getItem('user_name') || 'Gaurav Chakotiya';
+        const storedEmail = localStorage.getItem('user_email') || 'gchakotiya@gmail.com';
+        const initial = (storedName.trim().charAt(0) || storedEmail.trim().charAt(0) || 'G').toUpperCase();
+
+        const dockAvatar = document.querySelector('.ref-dock-avatar span');
+        if (dockAvatar) dockAvatar.textContent = initial;
+
+        if (displayUserEmail) displayUserEmail.textContent = storedEmail;
+        if (avatarLetter) avatarLetter.textContent = initial;
 
         if (btnAccountContinue) {
           btnAccountContinue.addEventListener('click', () => {
-            showToast(`Welcome back, ${displayUserEmail ? displayUserEmail.textContent : ''}!`, 'success');
-            const recentSection = document.getElementById('recentMeetingsSection');
-            if (recentSection) recentSection.scrollIntoView({ behavior: 'smooth' });
+            openAccountModal();
           });
         }
       }
+
+      window.openAccountModal = function() {
+        const modal = document.getElementById('userAccountModal');
+        if (!modal) return;
+        const storedName = localStorage.getItem('user_name') || 'Gaurav Chakotiya';
+        const storedEmail = localStorage.getItem('user_email') || 'gchakotiya@gmail.com';
+        const initial = (storedName.trim().charAt(0) || storedEmail.trim().charAt(0) || 'G').toUpperCase();
+
+        const nameEl = document.getElementById('accModalName');
+        const emailEl = document.getElementById('accModalEmail');
+        const avatarEl = document.getElementById('accModalAvatar');
+        if (nameEl) nameEl.textContent = storedName;
+        if (emailEl) emailEl.textContent = storedEmail;
+        if (avatarEl) avatarEl.textContent = initial;
+
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+      };
+
+      window.closeAccountModal = function() {
+        const modal = document.getElementById('userAccountModal');
+        if (modal) {
+          modal.style.display = 'none';
+          modal.classList.remove('active');
+        }
+      };
+
+      window.editAccountProfile = function() {
+        const currentName = localStorage.getItem('user_name') || 'Gaurav Chakotiya';
+        const newName = prompt('Enter your display name:', currentName);
+        if (newName && newName.trim()) {
+          const trimmedName = newName.trim();
+          localStorage.setItem('user_name', trimmedName);
+          const currentEmail = localStorage.getItem('user_email') || 'gchakotiya@gmail.com';
+          const newEmail = prompt('Enter your email address:', currentEmail);
+          if (newEmail && newEmail.trim()) {
+            localStorage.setItem('user_email', newEmail.trim());
+          }
+          initUserAccount();
+          openAccountModal();
+          showToast('✓ Profile updated successfully!', 'success');
+        }
+      };
+
+      window.signOutAccount = function() {
+        if (confirm('Are you sure you want to sign out?')) {
+          localStorage.removeItem('auth_token');
+          showToast('Signed out of session', 'info');
+          setTimeout(() => {
+            window.location.href = '/app/login.html';
+          }, 400);
+        }
+      };
+
+      const userAccModal = document.getElementById('userAccountModal');
+      if (userAccModal) {
+        userAccModal.addEventListener('click', (e) => {
+          if (e.target === userAccModal) closeAccountModal();
+        });
+      }
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeAccountModal();
+        }
+      });
 
       // ── Join Modal Handlers ──
       if (btnOpenJoinModal) {
