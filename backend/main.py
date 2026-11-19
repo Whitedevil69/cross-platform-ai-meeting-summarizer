@@ -671,7 +671,7 @@ async def websocket_audio(ws: WebSocket, meeting_id: str):
                     })
                     break
 
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, RuntimeError):
         logger.info("WS disconnected: meeting %s, client %s", meeting_id, client_id)
     except Exception as e:
         logger.error("WS error: %s", e)
