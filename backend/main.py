@@ -488,7 +488,13 @@ class RoomConnectionManager:
         #   "seg_counter": int
         # }
         self.rooms: dict[str, dict] = {}
-        self._lock = asyncio.Lock()
+        self._lock: asyncio.Lock | None = None
+
+    @property
+    def lock(self) -> asyncio.Lock:
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
 
     def _ensure_room(self, meeting_id: str) -> dict:
         if meeting_id not in self.rooms:
@@ -500,7 +506,7 @@ class RoomConnectionManager:
         return self.rooms[meeting_id]
 
     async def connect(self, meeting_id: str, client_id: str, name: str, ws: WebSocket):
-        async with self._lock:
+        async with self.lock:
             room = self._ensure_room(meeting_id)
             is_host = len(room["clients"]) == 0
             room["clients"][client_id] = {
@@ -515,7 +521,7 @@ class RoomConnectionManager:
         await self.broadcast_presence(meeting_id)
 
     async def disconnect(self, meeting_id: str, client_id: str):
-        async with self._lock:
+        async with self.lock:
             if meeting_id in self.rooms:
                 room = self.rooms[meeting_id]
                 if client_id in room["clients"]:
@@ -594,6 +600,21 @@ class RoomConnectionManager:
         for dc in dead_clients:
             await self.disconnect(meeting_id, dc)
 
+    async def send_to_client(self, meeting_id: str, target_client_id: str, message: dict) -> bool:
+        """Forward a direct message (such as a WebRTC signaling payload) to a specific client in the room."""
+        if meeting_id not in self.rooms:
+            return False
+        room = self.rooms[meeting_id]
+        if target_client_id in room["clients"]:
+            ws = room["clients"][target_client_id]["ws"]
+            try:
+                await ws.send_text(json.dumps(message))
+                return True
+            except Exception as e:
+                logger.warning("Failed to send direct message to client %s: %s", target_client_id, e)
+                await self.disconnect(meeting_id, target_client_id)
+        return False
+
 
 room_manager = RoomConnectionManager()
 
@@ -649,7 +670,13 @@ async def websocket_audio(ws: WebSocket, meeting_id: str):
                     continue
 
                 mtype = data.get("type")
-                if mtype == "speaking":
+                if mtype == "ping":
+                    try:
+                        await ws.send_text(json.dumps({"type": "pong"}))
+                    except Exception:
+                        pass
+
+                elif mtype == "speaking":
                     is_speaking = bool(data.get("is_speaking", False))
                     await room_manager.broadcast_speaking(meeting_id, client_id, is_speaking)
 
@@ -661,6 +688,24 @@ async def websocket_audio(ws: WebSocket, meeting_id: str):
                             room["clients"][client_id]["name"] = new_name
                             name = new_name
                             await room_manager.broadcast_presence(meeting_id)
+
+                elif mtype == "webrtc_signal":
+                    to_client = data.get("to_client")
+                    payload = data.get("payload")
+                    if to_client and payload:
+                        await room_manager.send_to_client(meeting_id, to_client, {
+                            "type": "webrtc_signal",
+                            "from_client": client_id,
+                            "payload": payload
+                        })
+
+                elif mtype == "video_state":
+                    camera_on = bool(data.get("camera_on", False))
+                    await room_manager.broadcast(meeting_id, {
+                        "type": "video_state",
+                        "client_id": client_id,
+                        "camera_on": camera_on
+                    }, exclude_client_id=client_id)
 
                 elif mtype == "end_meeting":
                     all_segments = room_manager.get_segments(meeting_id)

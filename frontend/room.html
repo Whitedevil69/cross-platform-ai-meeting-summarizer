@@ -1627,9 +1627,33 @@
         overflow: visible !important;
       }
       .left-panel {
-        min-height: 220px !important;
-        max-height: 320px !important;
+        min-height: 240px !important;
+        max-height: none !important;
         border-radius: 20px !important;
+      }
+      .tiles-grid-container {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+        gap: 10px !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+        padding-right: 0 !important;
+      }
+      .participant-tile {
+        min-height: 180px !important;
+        padding: 12px 10px 10px !important;
+      }
+      .participant-tile.has-video {
+        min-height: 180px !important;
+      }
+      .participant-tile .avatar-wrapper {
+        margin-top: 6px !important;
+        margin-bottom: 6px !important;
+      }
+      .participant-avatar {
+        width: 54px !important;
+        height: 54px !important;
+        font-size: 19px !important;
       }
       .right-panel {
         min-height: 320px !important;
@@ -2125,9 +2149,37 @@
       const transcriptSegments = [];
 
       // Multi-device WebSocket presence & identity state
-      const myClientId = 'user_' + Math.random().toString(36).substring(2, 10);
+      let myClientId = null;
+      function getClientId() {
+        if (!myClientId) {
+          const key = `syncra_cid_${meetingId || 'room'}`;
+          try {
+            myClientId = sessionStorage.getItem(key);
+            if (!myClientId) {
+              myClientId = 'user_' + Math.random().toString(36).substring(2, 10);
+              sessionStorage.setItem(key, myClientId);
+            }
+          } catch (e) {
+            myClientId = 'user_' + Math.random().toString(36).substring(2, 10);
+          }
+        }
+        return myClientId;
+      }
       let wsParticipants = new Map(); // client_id -> { client_id, name, is_host }
       let lastSentSpeakingState = false;
+      let isMeetingEnded = false;
+      let pingIntervalId = null;
+      let wsReconnectTimeout = null;
+
+      // WebRTC Peer-to-Peer Video Streaming State
+      const rtcConfig = {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' }
+        ]
+      };
+      const peerConnections = new Map(); // remoteClientId -> RTCPeerConnection
 
       // ── DOM Element References ───────────────────────────────────────
       const roomTitleEl = document.getElementById('room-title');
@@ -2573,13 +2625,27 @@
         try {
           const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
           const wsHost = window.location.host || 'localhost:8000';
-          const wsUrl = `${wsProtocol}//${wsHost}/ws/room/${encodeURIComponent(meetingId)}?client_id=${encodeURIComponent(myClientId)}&name=${encodeURIComponent(participantName)}`;
+          const myCid = getClientId();
+          const wsUrl = `${wsProtocol}//${wsHost}/ws/room/${encodeURIComponent(meetingId)}?client_id=${encodeURIComponent(myCid)}&name=${encodeURIComponent(participantName)}`;
 
           audioWs = new WebSocket(wsUrl);
           audioWs.binaryType = 'arraybuffer';
 
           audioWs.onopen = () => {
             console.log('WebSocket audio connection established:', wsUrl);
+            // Setup keep-alive ping to prevent Cloudflare tunnel / mobile OS timeout
+            if (pingIntervalId) clearInterval(pingIntervalId);
+            pingIntervalId = setInterval(() => {
+              if (audioWs && audioWs.readyState === WebSocket.OPEN) {
+                try { audioWs.send(JSON.stringify({ type: 'ping' })); } catch (e) {}
+              }
+            }, 12000);
+
+            // If camera is currently on, inform room
+            if (isCameraOn && localVideoStream) {
+              try { audioWs.send(JSON.stringify({ type: 'video_state', camera_on: true })); } catch (e) {}
+            }
+
             startMicrophoneCapture();
           };
 
@@ -2594,6 +2660,18 @@
 
           audioWs.onclose = (e) => {
             console.log('WebSocket audio disconnected:', e);
+            if (pingIntervalId) {
+              clearInterval(pingIntervalId);
+              pingIntervalId = null;
+            }
+            // Auto-reconnect if meeting is still actively in progress
+            if (!isMeetingEnded) {
+              if (wsReconnectTimeout) clearTimeout(wsReconnectTimeout);
+              wsReconnectTimeout = setTimeout(() => {
+                console.log('Attempting automatic WebSocket reconnection...');
+                connectAudioWebSocket();
+              }, 1500);
+            }
           };
 
           audioWs.onerror = (err) => {
@@ -2601,6 +2679,175 @@
           };
         } catch (err) {
           console.error('Failed to initialize WebSocket:', err);
+        }
+      }
+
+      // ── WebRTC Peer-to-Peer Video Streaming ───────────────────────────
+      function getOrCreatePeerConnection(remoteClientId) {
+        if (peerConnections.has(remoteClientId)) {
+          return peerConnections.get(remoteClientId);
+        }
+
+        const pc = new RTCPeerConnection(rtcConfig);
+        pc._remoteClientId = remoteClientId;
+        pc._queuedCandidates = [];
+        peerConnections.set(remoteClientId, pc);
+
+        // Attach local camera tracks if already streaming
+        if (localVideoStream) {
+          localVideoStream.getTracks().forEach(track => {
+            pc.addTrack(track, localVideoStream);
+          });
+        }
+
+        // Send local ICE candidates to remote peer via WebSocket signaling relay
+        pc.onicecandidate = (event) => {
+          if (event.candidate && audioWs && audioWs.readyState === WebSocket.OPEN) {
+            audioWs.send(JSON.stringify({
+              type: 'webrtc_signal',
+              to_client: remoteClientId,
+              payload: { candidate: event.candidate }
+            }));
+          }
+        };
+
+        // When remote video track is received, attach it to remote participant's tile!
+        pc.ontrack = (event) => {
+          console.log(`Received remote track (${event.track.kind}) from ${remoteClientId}`);
+          const stream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([event.track]);
+          attachRemoteStream(remoteClientId, stream);
+        };
+
+        pc.onconnectionstatechange = () => {
+          console.log(`WebRTC state with ${remoteClientId}: ${pc.connectionState}`);
+        };
+
+        return pc;
+      }
+
+      function attachRemoteStream(remoteClientId, stream) {
+        const remoteVideo = document.getElementById(`video-${remoteClientId}`);
+        const remoteTile = document.getElementById(`tile-${remoteClientId}`);
+        if (remoteVideo) {
+          remoteVideo.muted = true; // Prevent acoustic feedback between nearby devices
+          remoteVideo.srcObject = stream;
+          remoteVideo.classList.add('active');
+          remoteVideo.play().catch(e => {
+            console.warn('Remote video autoplay prevented, playing muted:', e);
+            remoteVideo.muted = true;
+            remoteVideo.play();
+          });
+        }
+        if (remoteTile) {
+          remoteTile.classList.add('has-video');
+        }
+      }
+
+      function detachRemoteStream(remoteClientId) {
+        const remoteVideo = document.getElementById(`video-${remoteClientId}`);
+        const remoteTile = document.getElementById(`tile-${remoteClientId}`);
+        if (remoteVideo) {
+          remoteVideo.srcObject = null;
+          remoteVideo.classList.remove('active');
+        }
+        if (remoteTile) {
+          remoteTile.classList.remove('has-video');
+        }
+      }
+
+      async function initiatePeerOffer(remoteClientId) {
+        const pc = getOrCreatePeerConnection(remoteClientId);
+        if (localVideoStream) {
+          const senders = pc.getSenders();
+          localVideoStream.getTracks().forEach(track => {
+            const existing = senders.find(s => s.track && s.track.kind === track.kind);
+            if (existing) {
+              existing.replaceTrack(track);
+            } else {
+              pc.addTrack(track, localVideoStream);
+            }
+          });
+        }
+
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          if (audioWs && audioWs.readyState === WebSocket.OPEN) {
+            audioWs.send(JSON.stringify({
+              type: 'webrtc_signal',
+              to_client: remoteClientId,
+              payload: { sdp: pc.localDescription }
+            }));
+          }
+        } catch (e) {
+          console.error(`Failed to initiate offer for ${remoteClientId}:`, e);
+        }
+      }
+
+      async function handleWebRTCSignal(msg) {
+        const fromClient = msg.from_client;
+        const payload = msg.payload;
+        if (!fromClient || !payload) return;
+
+        const pc = getOrCreatePeerConnection(fromClient);
+
+        try {
+          if (payload.sdp) {
+            const desc = new RTCSessionDescription(payload.sdp);
+            await pc.setRemoteDescription(desc);
+
+            // Flush queued candidates
+            if (pc._queuedCandidates && pc._queuedCandidates.length > 0) {
+              for (const cand of pc._queuedCandidates) {
+                try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
+              }
+              pc._queuedCandidates = [];
+            }
+
+            if (desc.type === 'offer') {
+              // Attach local tracks if camera is active
+              if (localVideoStream) {
+                const senders = pc.getSenders();
+                localVideoStream.getTracks().forEach(track => {
+                  const existing = senders.find(s => s.track && s.track.kind === track.kind);
+                  if (existing) {
+                    existing.replaceTrack(track);
+                  } else {
+                    pc.addTrack(track, localVideoStream);
+                  }
+                });
+              }
+
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+
+              if (audioWs && audioWs.readyState === WebSocket.OPEN) {
+                audioWs.send(JSON.stringify({
+                  type: 'webrtc_signal',
+                  to_client: fromClient,
+                  payload: { sdp: pc.localDescription }
+                }));
+              }
+            }
+          } else if (payload.candidate) {
+            if (!pc.remoteDescription) {
+              pc._queuedCandidates.push(payload.candidate);
+            } else {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+              } catch (e) {
+                console.warn('Error adding ICE candidate:', e);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('WebRTC signal processing error:', err);
+        }
+      }
+
+      function handleRemoteVideoState(msg) {
+        if (!msg.camera_on) {
+          detachRemoteStream(msg.client_id);
         }
       }
 
@@ -2731,6 +2978,10 @@
           handlePresenceUpdate(msg);
         } else if (msg.type === 'speaker_activity') {
           setTileSpeaking(msg.client_id, !!msg.is_speaking);
+        } else if (msg.type === 'webrtc_signal') {
+          handleWebRTCSignal(msg);
+        } else if (msg.type === 'video_state') {
+          handleRemoteVideoState(msg);
         } else if (msg.type === 'segment') {
           // New transcript segment received!
           appendTranscriptSegment(msg.data);
@@ -2749,9 +3000,10 @@
         if (!msg || !Array.isArray(msg.participants)) return;
 
         const currentRemoteIds = new Set();
+        const myCid = getClientId();
 
         msg.participants.forEach(p => {
-          if (p.client_id === myClientId) {
+          if (p.client_id === myCid) {
             // Local user
             return;
           }
@@ -2768,6 +3020,11 @@
               isMuted: false
             });
             showToast(`${p.name || 'A participant'} joined the meeting`, 'info');
+
+            // If local camera is currently ON, send WebRTC offer to new peer immediately!
+            if (isCameraOn && localVideoStream) {
+              initiatePeerOffer(p.client_id);
+            }
           } else {
             // Participant already rendered; update name if changed
             const existing = wsParticipants.get(p.client_id);
@@ -2777,6 +3034,8 @@
               if (tile) {
                 const nameEl = tile.querySelector('.participant-name');
                 if (nameEl) nameEl.textContent = p.name;
+                const avEl = tile.querySelector('.participant-avatar');
+                if (avEl) avEl.textContent = getInitials(p.name);
               }
             }
           }
@@ -2786,6 +3045,10 @@
         wsParticipants.forEach((p, cid) => {
           if (!currentRemoteIds.has(cid)) {
             removeParticipantTile(cid);
+            if (peerConnections.has(cid)) {
+              try { peerConnections.get(cid).close(); } catch (e) {}
+              peerConnections.delete(cid);
+            }
             wsParticipants.delete(cid);
             showToast(`${p.name || 'A participant'} left the meeting`, 'info');
           }
@@ -2958,9 +3221,22 @@
           if (localVideoStream) {
             const vid = tile.querySelector(`#video-${identity}`);
             if (vid) {
+              vid.muted = true;
               vid.srcObject = localVideoStream;
               vid.classList.add('active');
               tile.classList.add('has-video');
+              vid.play().catch(e => console.warn(e));
+            }
+          }
+        } else {
+          // Remote participant tile: if stream already arrived via WebRTC, attach immediately
+          const pc = peerConnections.get(identity);
+          if (pc) {
+            const receivers = pc.getReceivers ? pc.getReceivers() : [];
+            const videoRecv = receivers.find(r => r.track && r.track.kind === 'video');
+            if (videoRecv && videoRecv.track) {
+              const remoteStream = new MediaStream([videoRecv.track]);
+              setTimeout(() => attachRemoteStream(identity, remoteStream), 50);
             }
           }
         }
@@ -3098,35 +3374,31 @@
         try {
           if (!isCameraOn) {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-              showToast('📱 Mobile Safari requires HTTPS to access camera & mic hardware. Joined in Live Viewer & Caption mode.', 'info');
+              showToast('📱 Camera requires HTTPS on mobile browsers. Please open via the secure tunnel link.', 'info');
               return;
             }
 
-            // Request camera video stream
+            // Request camera video stream with mobile front camera preference
             localVideoStream = await navigator.mediaDevices.getUserMedia({
-              video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+              video: {
+                width: { ideal: 1280, max: 1920 },
+                height: { ideal: 720, max: 1080 },
+                facingMode: 'user',
+                frameRate: { ideal: 24, max: 30 }
+              },
               audio: false
             });
+
             const localVideo = document.getElementById('video-local-participant');
             const localTile = document.getElementById('tile-local-participant');
             if (localVideo) {
+              localVideo.muted = true;
               localVideo.srcObject = localVideoStream;
               localVideo.classList.add('active');
+              localVideo.play().catch(e => console.warn('Local video play catch:', e));
             }
             if (localTile) {
               localTile.classList.add('has-video');
-            }
-
-            // Publish to LiveKit room if connected
-            if (livekitRoom && typeof LivekitClient !== 'undefined') {
-              try {
-                livekitVideoTrack = await LivekitClient.createLocalVideoTrack({
-                  resolution: LivekitClient.VideoPresets.h720
-                });
-                await livekitRoom.localParticipant.publishTrack(livekitVideoTrack);
-              } catch (lkErr) {
-                console.warn('LiveKit video publish warning:', lkErr);
-              }
             }
 
             isCameraOn = true;
@@ -3134,7 +3406,17 @@
             camLabel.textContent = 'Stop Video';
             camIconActive.style.display = 'block';
             camIconOff.style.display = 'none';
-            showToast('Webcam video active', 'success');
+            showToast('Camera active', 'success');
+
+            // Broadcast video state to room
+            if (audioWs && audioWs.readyState === WebSocket.OPEN) {
+              audioWs.send(JSON.stringify({ type: 'video_state', camera_on: true }));
+            }
+
+            // Push tracks to all existing peer connections and send offer
+            for (const [remoteClientId, p] of wsParticipants.entries()) {
+              initiatePeerOffer(remoteClientId);
+            }
           } else {
             // Turn off camera
             if (localVideoStream) {
@@ -3151,26 +3433,31 @@
               localTile.classList.remove('has-video');
             }
 
-            if (livekitVideoTrack && livekitRoom) {
-              try {
-                await livekitRoom.localParticipant.unpublishTrack(livekitVideoTrack);
-                livekitVideoTrack.stop();
-                livekitVideoTrack = null;
-              } catch (lkErr) {
-                console.warn('LiveKit video unpublish warning:', lkErr);
-              }
-            }
-
             isCameraOn = false;
             btnToggleCam.classList.remove('active-control');
             camLabel.textContent = 'Start Video';
             camIconActive.style.display = 'none';
             camIconOff.style.display = 'block';
             showToast('Camera stopped', 'info');
+
+            // Broadcast video stop to room
+            if (audioWs && audioWs.readyState === WebSocket.OPEN) {
+              audioWs.send(JSON.stringify({ type: 'video_state', camera_on: false }));
+            }
+
+            // Remove video track from peer connections
+            for (const [remoteClientId, pc] of peerConnections.entries()) {
+              const senders = pc.getSenders();
+              senders.forEach(s => {
+                if (s.track && s.track.kind === 'video') {
+                  try { pc.removeTrack(s); } catch (e) {}
+                }
+              });
+            }
           }
         } catch (err) {
-          console.error('Camera access error:', err);
-          showToast('Could not access camera: ' + (err.message || 'Permission denied'), 'danger');
+          console.error('Camera toggle error:', err);
+          showToast(`Camera: ${err.message || 'Permission denied or hardware busy'}`, 'danger');
         }
       }
 
@@ -3335,6 +3622,21 @@
         modalEndConfirm.classList.remove('active');
         modalEndConfirm.classList.remove('open');
         endingOverlay.classList.add('active');
+
+        // Mark meeting ended to prevent auto-reconnection
+        isMeetingEnded = true;
+        if (pingIntervalId) {
+          clearInterval(pingIntervalId);
+          pingIntervalId = null;
+        }
+        if (wsReconnectTimeout) {
+          clearTimeout(wsReconnectTimeout);
+          wsReconnectTimeout = null;
+        }
+        for (const [cid, pc] of peerConnections.entries()) {
+          try { pc.close(); } catch (e) {}
+        }
+        peerConnections.clear();
 
         // Stop Local Recording & Media Streams
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
