@@ -16,6 +16,9 @@ Routes:
 """
 from __future__ import annotations
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import sys
 # Windows Application Control guard: avoid DLL block errors for optional accelerators
 sys.modules.setdefault("ujson", None)
