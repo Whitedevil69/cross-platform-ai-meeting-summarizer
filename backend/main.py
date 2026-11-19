@@ -207,10 +207,22 @@ async def get_network_info():
         s.close()
     except Exception:
         pass
+
+    tunnel_url = None
+    tunnel_file = Path(__file__).parent.parent / ".tunnel_url"
+    if tunnel_file.exists():
+        try:
+            content = tunnel_file.read_text().strip()
+            if content.startswith("https://"):
+                tunnel_url = content
+        except Exception:
+            pass
+
     return {
         "lan_ip": lan_ip,
         "port": 8000,
-        "shareable_url": f"http://{lan_ip}:8000"
+        "tunnel_url": tunnel_url,
+        "shareable_url": tunnel_url or f"http://{lan_ip}:8000"
     }
 
 

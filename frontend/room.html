@@ -3151,7 +3151,9 @@
             const netRes = await fetch('/api/network/info');
             if (netRes.ok) {
               const netData = await netRes.json();
-              if (netData.lan_ip && netData.lan_ip !== '127.0.0.1') {
+              if (netData.tunnel_url) {
+                targetUrl = targetUrl.replace(window.location.origin, netData.tunnel_url);
+              } else if (netData.lan_ip && netData.lan_ip !== '127.0.0.1') {
                 targetUrl = targetUrl.replace(window.location.host, `${netData.lan_ip}:8000`);
               }
             }
