@@ -2185,10 +2185,14 @@
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' }
-        ]
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun.cloudflare.com:3478' },
+          { urls: 'stun:global.stun.twilio.com:3478' }
+        ],
+        iceCandidatePoolSize: 10
       };
       const peerConnections = new Map(); // remoteClientId -> RTCPeerConnection
+      const remoteStreams = new Map();   // remoteClientId -> MediaStream (cached to prevent race conditions)
 
       // ── DOM Element References ───────────────────────────────────────
       const roomTitleEl = document.getElementById('room-title');
@@ -2735,6 +2739,7 @@
       }
 
       function attachRemoteStream(remoteClientId, stream) {
+        remoteStreams.set(remoteClientId, stream);
         const remoteVideo = document.getElementById(`video-${remoteClientId}`);
         const remoteTile = document.getElementById(`tile-${remoteClientId}`);
         if (remoteVideo) {
@@ -2744,7 +2749,7 @@
           remoteVideo.play().catch(e => {
             console.warn('Remote video autoplay prevented, playing muted:', e);
             remoteVideo.muted = true;
-            remoteVideo.play();
+            remoteVideo.play().catch(() => {});
           });
         }
         if (remoteTile) {
@@ -2779,6 +2784,9 @@
         }
 
         try {
+          if (pc.signalingState !== 'stable') {
+            await new Promise(r => setTimeout(r, 200));
+          }
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
           if (audioWs && audioWs.readyState === WebSocket.OPEN) {
@@ -3239,13 +3247,17 @@
           }
         } else {
           // Remote participant tile: if stream already arrived via WebRTC, attach immediately
-          const pc = peerConnections.get(identity);
-          if (pc) {
-            const receivers = pc.getReceivers ? pc.getReceivers() : [];
-            const videoRecv = receivers.find(r => r.track && r.track.kind === 'video');
-            if (videoRecv && videoRecv.track) {
-              const remoteStream = new MediaStream([videoRecv.track]);
-              setTimeout(() => attachRemoteStream(identity, remoteStream), 50);
+          if (remoteStreams.has(identity)) {
+            attachRemoteStream(identity, remoteStreams.get(identity));
+          } else {
+            const pc = peerConnections.get(identity);
+            if (pc) {
+              const receivers = pc.getReceivers ? pc.getReceivers() : [];
+              const videoRecv = receivers.find(r => r.track && r.track.kind === 'video');
+              if (videoRecv && videoRecv.track) {
+                const remoteStream = new MediaStream([videoRecv.track]);
+                setTimeout(() => attachRemoteStream(identity, remoteStream), 50);
+              }
             }
           }
         }
@@ -3387,16 +3399,20 @@
               return;
             }
 
-            // Request camera video stream with mobile front camera preference
-            localVideoStream = await navigator.mediaDevices.getUserMedia({
-              video: {
-                width: { ideal: 1280, max: 1920 },
-                height: { ideal: 720, max: 1080 },
-                facingMode: 'user',
-                frameRate: { ideal: 24, max: 30 }
-              },
-              audio: false
-            });
+            // Request camera video stream with fallback to support all webcams and phones
+            try {
+              localVideoStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                  width: { ideal: 1280 },
+                  height: { ideal: 720 },
+                  facingMode: 'user'
+                },
+                audio: false
+              });
+            } catch (err) {
+              console.warn('Strict camera constraints failed, trying basic video:', err);
+              localVideoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            }
 
             const localVideo = document.getElementById('video-local-participant');
             const localTile = document.getElementById('tile-local-participant');

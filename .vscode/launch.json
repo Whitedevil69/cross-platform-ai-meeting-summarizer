@@ -12,7 +12,9 @@
         "0.0.0.0",
         "--port",
         "8000",
-        "--reload"
+        "--reload",
+        "--reload-dir",
+        "backend"
       ],
       "jinja": true,
       "justMyCode": true,
